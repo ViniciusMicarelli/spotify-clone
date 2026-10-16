@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: spotify-clone-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cli:
+    image: redis:7-alpine
+    container_name: spotify-clone-redis-cli
+    depends_on:
+      - redis
+    entrypoint: ["redis-cli"]
+    command: ["-h", "redis", "-p", "6379"]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: spotify-clone-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@spotify-clone.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_ADMIN_EMAIL: 'true'
+      PGADMIN_CONFIG_SERVER_ADMIN_PASSWORD: 'true'
+    depends_on:
+      - postgres
+    networks:
+      - spotify-clone
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: spotify-clone-postgres
+    environment:
+      POSTGRES_USER: spotify
+      POSTGRES_PASSWORD: spotify
+      POSTGRES_DB: spotify_clone
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spotify -d spotify_clone"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  spotify-clone:
+    name: spotify-clone
+    driver: bridge
+
+volumes:
+  redis-data:
+    name: spotify-clone-redis-data
+  postgres-data:
+    name: spotify-clone-postgres-data

@@ -1,0 +1,28 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/layout/Layout';
+import Login from './components/auth/Login';
+import Signup from './components/auth/Signup';
+import Catalog from './pages/Catalog';
+import Playlist from './pages/Playlist';
+import Favorites from './pages/Favorites';
+import Profile from './pages/Profile';
+
+export default function App() {
+  return <Routes>
+    <Route element={<Layout />}>
+      <Route index element={<Catalog kind="tracks" />} />
+      <Route path="search/:query?" element={<Catalog kind="tracks" search />} />
+      <Route path="profile" element={<Profile />} />
+      <Route path="liked-songs" element={<Favorites />} />
+      <Route path="library" element={<Catalog kind="playlists" />} />
+      <Route path="artist/:id" element={<Catalog kind="artists" />} />
+      <Route path="album/:id" element={<Catalog kind="albums" />} />
+      <Route path="playlist/:id" element={<Playlist />} />
+      <Route path="track/:id" element={<Catalog kind="tracks" />} />
+      <Route path="create-playlist" element={<Catalog kind="playlists" create />} />
+    </Route>
+    <Route path="auth/login" element={<Login />} />
+    <Route path="auth/signup" element={<Signup />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>;
+}
