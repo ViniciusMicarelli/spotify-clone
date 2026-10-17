@@ -1,10 +1,10 @@
-# Estado verificado — 16/10/2026
+# Estado verificado — 17/10/2026
 
 ## Resultado desta etapa
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 13 testes do backend (nove de API e quatro de armazenamento) e oito testes da fila passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 18 testes do backend (14 de API/sessões e quatro de armazenamento) e oito testes da fila passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -65,4 +65,16 @@ Os dados reais desta sessão foram migrados após encerrar a API antiga. As sete
 
 Evidência REA `ev_1c029c7a0ee76ac28c5341c1abdca11566a6bc60dbe3fcbce2bb70561ffe1525`: login demo, abertura de Meu perfil, alteração do nome, atualização do cabeçalho, recarga confirmando persistência e restauração do nome original. Cenário completo, sem erros de página, em `http://127.0.0.1:5174`.
 
-Próxima etapa sugerida: refresh tokens e recuperação de sessão; depois normalização do catálogo e revisão dos componentes antigos. OAuth, refresh tokens e revisão dos componentes antigos continuam pendentes. Rotas antigas de follow/liked não foram portadas para o novo router.
+## Renovação e revogação de sessão
+
+Tokens de acesso duram 15 minutos por padrão e ficam em memória. Um cookie HttpOnly/SameSite=Strict guarda o refresh token aleatório; a cada uso há rotação com prazo absoluto de 30 dias desde o login. SQLite mantém hashes e famílias de sessão. Reuso revoga a família, e logout invalida também o acesso já emitido. O frontend compartilha a renovação entre chamadas concorrentes, repete a requisição uma vez e serializa operações de sessão; usa Web Locks quando disponíveis para coordenar abas da mesma origem.
+
+Cinco testes adicionais cobrem atributos do cookie, ausência de refresh em JSON e de token bruto no armazenamento, acesso expirado, rotação, replay com isolamento entre logins, logout, refresh inválido/expirado e rejeição de Origin não autorizado.
+
+REA: `ev_1b4f86a8274e4b9d565500155b983c4ccbd8a5f18afb4a2ad074f47341051fc6`. Fixture isolada com build de produção, SQLite temporário e token de dois segundos entregue após expirar. Captura mostra `/auth/me` e `/me/liked-tracks` com 401, uma única chamada de refresh 200 e repetição bem-sucedida das leituras. Também confirma restauração após recarregar, logout e recarga permanecendo visitante. Cenário completo, sem erros de página.
+
+As primeiras tentativas `ev_5ec1eaae6de273ced6e8c68777c54c65361b4a16bcf101ac203b1e5e2f9cf809` e `ev_80b9704777d0297c2c9236bcd3717f2ad168ae53b2ae9791930cc00e5e4937a0` foram parciais por timeout ao navegar após a espera de expiração. Não comprovam o fluxo. O cenário final usa atraso controlado na resposta de login para tornar o acesso expirado e observar diretamente as requisições concorrentes.
+
+Sessões antigas sem `sid` exigem novo login. OAuth permanece pendente. Cookies Strict exigem frontend/API no mesmo site; produção requer HTTPS e configuração da origem autorizada.
+
+Próxima etapa sugerida: normalização do catálogo e revisão dos componentes antigos. OAuth, refresh tokens e revisão dos componentes antigos continuam pendentes. Rotas antigas de follow/liked não foram portadas para o novo router.

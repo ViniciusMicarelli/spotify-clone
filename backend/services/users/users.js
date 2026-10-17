@@ -1,5 +1,6 @@
 import express from 'express';
 import authMiddleware from '../../middleware/auth.js';
+import { revokeUserSessions } from '../../data/sessions.js';
 import { usersDB, publicUser } from '../../data/users.js';
 import { PersistentMap, transaction } from '../../data/store.js';
 import playlists from '../playlists/playlists.js';
@@ -34,6 +35,7 @@ router.delete('/:id', (req, res) => {
   transaction(() => {
     for (const playlist of playlists.playlistsDB.values()) if (playlist.owner.id === req.userId) playlists.playlistsDB.delete(playlist.id);
     favorites.delete(req.userId);
+    revokeUserSessions(req.userId);
     usersDB.delete(req.userId);
   });
   res.json({ success: true });

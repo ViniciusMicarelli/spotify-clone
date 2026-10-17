@@ -34,11 +34,11 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 13 testes do backend (nove de API e quatro de armazenamento) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. Oito testes do frontend verificam a fila, shuffle, repetição e remoção de faixas.
+Os 18 testes do backend (14 de API/sessão e quatro de armazenamento) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. Oito testes do frontend verificam a fila, shuffle, repetição e remoção de faixas.
 
 ## Configuração e limites
 
-- Backend: `PORT` (padrão 3000), `JWT_SECRET` (obrigatório em produção; chave local persistida em desenvolvimento).
+- Backend: `PORT` (padrão 3000), `JWT_SECRET` (obrigatório em produção; chave local persistida em desenvolvimento), `ACCESS_TOKEN_TTL_SECONDS` (padrão 900) e `FRONTEND_ORIGIN` (origens autorizadas, separadas por vírgula).
 - Frontend: `VITE_API_URL`, caso necessário, deve incluir `/api/v1`, por exemplo `http://localhost:3000/api/v1`.
 - Dados e contas são salvos em SQLite (`backend/.data/spotify.sqlite`, ignorado pelo Git). `DATA_DIR` permite outro diretório. O banco usa WAL e transações; Redis e PostgreSQL não são necessários.
 - Na primeira inicialização, os JSONs existentes são importados juntos, uma única vez. Arquivos inválidos interrompem a migração com rollback. Encerre a versão antiga da API antes de migrar. Os JSONs permanecem intactos como snapshot anterior e deixam de receber alterações.
@@ -52,5 +52,8 @@ Os 13 testes do backend (nove de API e quatro de armazenamento) usam diretórios
 - Aleatório embaralha apenas as faixas seguintes, preservando a atual e as anteriores; desligá-lo restaura a ordem original da seleção. Uma volta de repetição da fila usa a ordem já embaralhada.
 - Repetição alterna entre desligada, fila e faixa. “Próxima” avança manualmente mesmo em repetição de faixa; em repetição de fila, os controles permitem voltar ao início/fim.
 - É possível retirar faixas ou limpar a fila sem mudar a playlist salva. Remover a faixa atual reproduz a próxima; se era a última, reproduz a anterior restante. Limpar a fila para o áudio. Fila e modos duram apenas na sessão atual.
-- OAuth, refresh tokens, arrastar e soltar e colaboração continuam pendentes. O protótipo destina-se a uso local.
+- Acesso JWT dura 15 minutos por padrão e permanece apenas na memória do navegador. O refresh token fica em cookie HttpOnly/SameSite=Strict, é rotacionado e expira em até 30 dias desde o login; em produção usa Secure e requer HTTPS. O SQLite armazena hashes dos refresh tokens.
+- Requisições com acesso expirado compartilham uma renovação e são repetidas uma única vez. Recarregar restaura a sessão pelo cookie. Logout revoga a sessão no servidor, e reutilizar um refresh antigo revoga toda a família daquele login.
+- A atualização remove o antigo token do localStorage; sessões da versão anterior exigem novo login. Use frontend/API no mesmo site (em desenvolvimento, mantenha o mesmo hostname); para produção com origens distintas, configure `FRONTEND_ORIGIN`.
+- OAuth, arrastar e soltar e colaboração continuam pendentes. O protótipo destina-se a uso local.
 - Existem componentes antigos fora do fluxo atual; o build parte de `frontend/web/src/main.jsx`.

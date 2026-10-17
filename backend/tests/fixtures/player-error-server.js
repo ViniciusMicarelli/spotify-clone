@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const app = express();
 const dist = fileURLToPath(new URL('../../../frontend/web/dist/', import.meta.url));
 const audio = fileURLToPath(new URL('../../public/audio/', import.meta.url));
+app.post('/api/v1/auth/refresh', (req, res) => res.status(401).json({ error: 'Guest fixture' }));
 app.get('/api/v1/tracks', (req, res) => res.json({ data: [
   { id: 'broken', title: 'Áudio indisponível de teste', artists: ['1'], album: { id: '1', name: 'Teste de recuperação' }, duration: 1000, url: '/api/v1/audio/inexistente.wav' },
   { id: '2', title: 'Digital Dreams', artists: ['2'], album: { id: '2', name: 'Demonstração' }, duration: 10000, url: '/api/v1/audio/demo-2.wav' }

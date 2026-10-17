@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useAuthStore } from './context/AuthContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
@@ -8,6 +10,9 @@ import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 
 export default function App() {
+  const ready = useAuthStore(state => state.ready);
+  useEffect(() => { useAuthStore.getState().initialize(); }, []);
+  if (!ready) return <p role="status">Recuperando sessão…</p>;
   return <Routes>
     <Route element={<Layout />}>
       <Route index element={<Catalog kind="tracks" />} />

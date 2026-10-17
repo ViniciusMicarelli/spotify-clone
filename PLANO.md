@@ -1,6 +1,6 @@
 # Plano de Ação: Clone do Spotify - Streaming de Música
 
-## Estado verificado em 16/10/2026
+## Estado verificado em 17/10/2026
 
 - Implementação atual: React/Vite + Zustand e Node.js/Express em um processo.
 - Cadastro, login JWT e `/auth/me` implementados, com testes de integração.
@@ -9,12 +9,13 @@
 - REA validou no Chromium: login demo, catálogo, criação de playlist e busca; nenhum erro de página registrado. Evidência e limites em `docs/estado-atual.md`.
 - Player usa HTMLAudioElement com três áudios instrumentais locais gerados para demonstração (8, 10 e 12 segundos). REA confirmou reprodução com progresso, pausa/retomada, busca, volume, próxima/anterior, fim natural, encerramento da fila e recuperação de erro.
 - Perfis e autenticação usam o mesmo armazenamento. Perfis e mutações de playlists são restritos ao proprietário; playlists privadas ficam ocultas de outras contas. Catálogo exige administrador para mutações.
-- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 13 testes do backend (API/armazenamento) e oito testes da fila aprovados, incluindo persistência em novo processo.
+- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 18 testes do backend (API/armazenamento) e oito testes da fila aprovados, incluindo persistência em novo processo.
 - REA confirmou edição de playlist e reabertura em nova sessão; evidências em `docs/estado-atual.md`.
 - Reordenação por botões subir/descer implementada; a API valida que a lista contém exatamente as faixas atuais. Favoritos privados por conta disponíveis no catálogo, detalhes, player e página Músicas curtidas.
 - Testes confirmam que ordem e curtidas persistem em novo processo. REA confirmou reordenação e o fluxo curtir → Músicas curtidas → descurtir em cenários separados.
 - Shuffle/repeat e remoção/limpeza da fila implementados. Aleatório preserva a música atual; repetição de faixa vale para término automático, e repetição de fila permite circular nos extremos. REA confirmou os fluxos sem erros de página.
-- Refresh tokens, OAuth, arrastar e soltar, colaboração e normalização relacional completa do catálogo continuam pendentes.
+- Access token de 15 minutos em memória, refresh rotativo em cookie HttpOnly e sessões revogáveis implementados. REA confirmou renovação compartilhada de dois 401, restauração após recarregar e logout persistente.
+- OAuth, arrastar e soltar, colaboração e normalização relacional completa do catálogo continuam pendentes.
 - Página Meu perfil implementada: edição de nome/foto, atualização no cabeçalho e nos donos das playlists, persistência após recarregar. REA confirmou o fluxo.
 - Migração, rollback, savepoints e concorrência entre processos validados em testes isolados. Dados locais migrados com igualdade das sete coleções antes da edição do perfil.
 - Os checklists abaixo representam o escopo completo: um esboço ou implementação parcial não conclui um item.
@@ -182,9 +183,9 @@ spotify-clone/
 
 ### Prioridade 1 - Autenticação de Usuários (Semana 1-2)
 - [ ] Sistema de registro/login (email, social auth)
-- [ ] JWT tokens + Refresh tokens
+- [x] JWT tokens + Refresh tokens
 - [ ] Autenticação via OAuth (Google, Apple, Facebook)
-- [ ] Middleware de autenticação
+- [x] Middleware de autenticação
 - [ ] Roteiro de roteamento baseado em auth
 
 ### Prioridade 2 - CRUD de Entidades (Semana 3-6)

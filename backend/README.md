@@ -14,7 +14,9 @@ Entrada única: `api-gateway/index.js`, porta 3000 por padrão. Não é necessá
 - `GET/HEAD /api/v1/audio/demo-{1,2,3}.wav` — PCM WAV local, com suporte a Range (206)
 - `POST /api/v1/auth/signup` — username, email, password (mínimo 8 caracteres), name opcional
 - `POST /api/v1/auth/signin` — username, password
-- `GET /api/v1/auth/me` — Bearer token
+- `GET /api/v1/auth/me` — Bearer token de acesso
+- `POST /api/v1/auth/refresh` — cookie de refresh, rotaciona e retorna novo acesso
+- `POST /api/v1/auth/signout` — revoga a família do cookie atual e limpa o cookie (idempotente)
 - `GET /api/v1/users` — próprio perfil; `GET/PUT/DELETE /api/v1/users/:id` — apenas a própria conta
 - `/api/v1/tracks`, `/api/v1/albums`, `/api/v1/artists` — leitura pública; mutações somente para administradores
 - `GET/POST /api/v1/playlists` — listar playlists visíveis / criar playlist
@@ -30,7 +32,7 @@ Mutações de playlists exigem o token do proprietário. Playlists privadas são
 
 Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, preservando a ordem em que foram curtidos. Os IDs de usuário enviados pelo cliente não selecionam outra conta. As antigas rotas de follow/liked em `/playlists` não são aliases das novas rotas de favoritos; follow continua pendente. Validação abrangente dos descritores legados de catálogo continua pendente.
 
-`JWT_SECRET` é obrigatório em produção. Em desenvolvimento, uma chave é gerada e salva no diretório de dados. Não há refresh token ou OAuth implementado.
+`JWT_SECRET` é obrigatório em produção. Em desenvolvimento, uma chave é gerada e salva no diretório de dados. OAuth continua pendente.
 
 `DATA_DIR` define o diretório de persistência (padrão `backend/.data/`). O arquivo `spotify.sqlite` usa WAL e busy timeout de 5 segundos. Registros mantêm o formato JSON dentro de uma tabela com chave composta por coleção/ID. Índices únicos de usuário e email protegem o cadastro.
 
@@ -41,3 +43,13 @@ Operações read-modify-write de playlists/favoritos usam transações. Alterar 
 O Compose existente é infraestrutura opcional para trabalho futuro; a API atual não o utiliza.
 
 Os arquivos de demonstração são gerados por `scripts/generate-demo-audio.py`. A inicialização migra apenas as URLs originais SoundHelix das três faixas sem alterar URLs personalizadas, e atualiza as durações derivadas das playlists.
+
+## Sessões
+
+JWT de acesso contém `sid` e tem validade padrão de 900 segundos (`ACCESS_TOKEN_TTL_SECONDS`). A sessão é verificada no banco em cada chamada protegida, permitindo revogação imediata. JWTs da versão anterior sem sessão não são mais aceitos.
+
+O cookie `spotify_refresh` usa HttpOnly, SameSite=Strict e Path=/api/v1/auth; Secure em produção. Cada renovação troca o token aleatório e marca seu hash anterior como usado. Reaproveitamento revoga a família inteira. O prazo máximo é fixo em 30 dias, sem estender em cada renovação. Login cria uma família; outros logins independentes permanecem válidos. Exclusão de conta remove sessões e hashes na mesma transação dos demais dados. Famílias expiradas são limpas ao criar uma nova sessão.
+
+Rotas de autenticação usam Cache-Control: no-store e validam Origin. Em desenvolvimento aceitam loopback; em produção aceitam a própria origem e `FRONTEND_ORIGIN` (lista separada por vírgula). CORS reflete a origem e permite credenciais; as rotas de cookie aplicam a validação de origem antes de qualquer alteração. A implantação deve usar HTTPS e frontend/API no mesmo site para o cookie Strict.
+
+A fixture `node backend/tests/fixtures/session-server.js` serve o build em 127.0.0.1:5175 com SQLite temporário e acesso de dois segundos, atrasando o login para entregar acesso expirado. Ela permite verificar recuperação simultânea de 401 sem alterar dados reais. Encerre o processo ao terminar.
