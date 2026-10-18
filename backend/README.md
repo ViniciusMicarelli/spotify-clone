@@ -31,7 +31,7 @@ Entrada única: `api-gateway/index.js`, porta 3000 por padrão. Não é necessá
 
 Mutações de playlists exigem o token do proprietário. Playlists privadas são visíveis apenas a ele; as públicas podem ser lidas sem token. GET de playlists aceita `userId`, `search`, `limit` (1–100) e `offset`. Faixas repetidas são deduplicadas, faixas inexistentes são rejeitadas e a duração é recalculada. Perfis usam o cadastro da autenticação e não expõem senhas. POST de usuários é feito por `/auth/signup`.
 
-Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, preservando a ordem em que foram curtidos. Os IDs de usuário enviados pelo cliente não selecionam outra conta. As antigas rotas de follow/liked em `/playlists` não são aliases das novas rotas de favoritos; follow continua pendente. O catálogo agora usa rotas próprias com validação e relações normalizadas.
+Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, preservando a ordem em que foram curtidos. Os IDs de usuário enviados pelo cliente não selecionam outra conta. As antigas rotas de follow/liked em `/playlists` não são aliases das novas rotas de favoritos; seguir artistas usa as rotas próprias descritas abaixo. O catálogo agora usa rotas próprias com validação e relações normalizadas.
 
 `JWT_SECRET` é obrigatório em produção. Em desenvolvimento, uma chave é gerada e salva no diretório de dados. OAuth continua pendente.
 
@@ -78,3 +78,12 @@ A leitura paginada de faixas valida limit (1–100) e offset inteiro seguro não
 A fixture `node backend/tests/fixtures/pagination-server.js` serve o build com SQLite temporário, 121 faixas e uma playlist privada da conta demo, em 127.0.0.1:5175. Não altera o banco normal. Encerre o processo ao terminar.
 
 Listagens de artistas, álbuns e faixas aplicam busca, filtros, contagem e LIMIT/OFFSET no SQLite, em um snapshot de leitura. A ordem permanece a de inserção. Busca usa substring literal com conversão Unicode para minúsculas: `%` e `_` não são curingas. Relações usam EXISTS para evitar duplicação; somente os IDs da página recebem metadados completos. A busca por substring ainda pode percorrer registros no banco; não há FTS.
+
+
+Artistas seguidos (todas as rotas exigem autenticação):
+
+- `GET /api/v1/me/followed-artists?limit=20&offset=0` retorna `{ data, pagination }`, na ordem em que foram seguidos; limites 1–100.
+- `GET /api/v1/me/followed-artists/:artistId` retorna `{ following, followers }`.
+- `PUT /api/v1/me/followed-artists/:artistId` segue; `DELETE` deixa de seguir. Ambos são idempotentes e retornam o estado atualizado; artista inexistente retorna 404.
+
+A conta vem exclusivamente do token. A tabela SQLite `artist_follows` tem chave única conta/artista e FKs com exclusão em cascata para os artistas e registros de usuário. Listas têm paginação SQL e snapshot de leitura. `followers` no catálogo e no estado de follow soma o valor base importado aos vínculos locais; a escrita administrativa desse campo define somente o valor base. Editar outros metadados não incorpora a contagem derivada ao valor base. O total é público; a lista de artistas seguidos de cada conta é privada.

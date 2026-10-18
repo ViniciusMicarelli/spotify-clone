@@ -38,6 +38,16 @@ transaction(() => {
     CREATE INDEX IF NOT EXISTS catalog_track_artist ON catalog_track_artists(artist_id);
     CREATE INDEX IF NOT EXISTS catalog_album_artist ON catalog_album_artists(artist_id);
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS artist_follows (
+      user_collection TEXT NOT NULL DEFAULT 'users' CHECK(user_collection='users'),
+      user_id TEXT NOT NULL,
+      artist_id TEXT NOT NULL REFERENCES catalog_artists(id) ON DELETE CASCADE,
+      PRIMARY KEY(user_id, artist_id),
+      FOREIGN KEY(user_collection,user_id) REFERENCES records(collection,key) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS artist_follows_artist ON artist_follows(artist_id);
+  `);
   const version = row("SELECT value FROM metadata WHERE key='catalog_version'");
   if (version) { if (version.value !== '1') fail('Versão de catálogo não suportada.', 500); return; }
   const sources = { artists: mockArtists, albums: mockAlbums, tracks: mockTracks };
@@ -57,7 +67,7 @@ transaction(() => {
 export function getCatalog(kind, id) {
   if (kind === 'artists') {
     const value = row('SELECT * FROM catalog_artists WHERE id=?', id);
-    return value && { ...JSON.parse(value.metadata), id, name: value.name, followers: value.followers, images: JSON.parse(value.images), genres: rows('SELECT genre FROM catalog_artist_genres WHERE artist_id=? ORDER BY position', id).map(item => item.genre) };
+    return value && { ...JSON.parse(value.metadata), id, name: value.name, followers: value.followers + row('SELECT count(*) AS n FROM artist_follows WHERE artist_id=?', id).n, images: JSON.parse(value.images), genres: rows('SELECT genre FROM catalog_artist_genres WHERE artist_id=? ORDER BY position', id).map(item => item.genre) };
   }
   if (kind === 'albums') {
     const value = row('SELECT * FROM catalog_albums WHERE id=?', id);
@@ -112,6 +122,7 @@ function validUrl(value) {
 export function saveCatalog(kind, body, id) {
   return transaction(() => {
     const current = id && getCatalog(kind, id);
+    if (current && kind === 'artists') current.followers = row('SELECT followers FROM catalog_artists WHERE id=?', id).followers;
     if (id && !current) fail('Registro não encontrado.', 404);
     const allowed = kind === 'artists' ? ['name','images','followers','genres'] : kind === 'albums' ? ['name','images','artists'] : ['title','duration','artists','album','albumId','url'];
     if (!body || Array.isArray(body) || Object.keys(body).some(key => !allowed.includes(key))) fail('Campos de catálogo inválidos.');

@@ -9,6 +9,7 @@ import CreatePlaylist from './pages/CreatePlaylist';
 import Playlist from './pages/Playlist';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
+import Library from './pages/Library';
 
 export default function App() {
   const ready = useAuthStore(state => state.ready);
@@ -20,7 +21,7 @@ export default function App() {
       <Route path="search/:query?" element={<Catalog kind="tracks" search />} />
       <Route path="profile" element={<Profile />} />
       <Route path="liked-songs" element={<Favorites />} />
-      <Route path="library" element={<Catalog kind="playlists" />} />
+      <Route path="library" element={<Library />} />
       <Route path="artist/:id" element={<Catalog kind="artists" />} />
       <Route path="album/:id" element={<Catalog kind="albums" />} />
       <Route path="playlist/:id" element={<Playlist />} />

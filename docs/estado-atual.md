@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 23 testes do backend (18 de API/sessões e cinco de armazenamento/migração) e 11 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 26 testes do backend e 11 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -107,7 +107,7 @@ REA, fixture isolada de produção com 121 faixas em 127.0.0.1:5175:
 
 Os navegadores temporários foram encerrados pela REA. O processo da fixture também foi encerrado ao final.
 
-Etapa seguinte concluída abaixo: filtros e paginação diretamente no SQL. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.
+Etapa seguinte concluída abaixo: filtros e paginação diretamente no SQL. OAuth e colaboração permanecem pendentes; follow foi implementado na etapa registrada abaixo.
 
 
 ## Filtros e paginação SQL — 18/10/2026
@@ -118,4 +118,17 @@ Validação: 24 testes backend + 11 frontend e build aprovados. O novo teste com
 
 REA `ev_5e37d3d07e32d0c788364210b5938cb3e3d869c5e4221222706f3ae09fef49a5`: cenário completo na fixture isolada com 121 faixas; página 2/tamanho 10 mostra Demo extra 008 e a busca por Demo extra 118 reinicia na primeira página com um resultado. Ambas as consultas retornaram 200; zero erros de página. O 401 de refresh é esperado para visitante sem cookie. Navegador e fixture encerrados ao final.
 
-Próxima etapa sugerida: implementar seguir/deixar de seguir artistas com persistência e isolamento por conta. OAuth, colaboração e arrastar/soltar continuam pendentes.
+Etapa seguinte concluída abaixo: seguir/deixar de seguir artistas com persistência e isolamento por conta. OAuth, colaboração e arrastar/soltar continuam pendentes.
+
+
+## Artistas seguidos — 18/10/2026
+
+A página de artista permite seguir/deixar de seguir, mostra o total de seguidores e oferece nova tentativa em caso de erro. Visitantes recebem um link para entrar. A biblioteca mantém as playlists e adiciona uma seção paginada de artistas seguidos (10/20/50), com paginação independente em memória. A lista privada usa apenas a conta autenticada e é descartada na troca de sessão.
+
+A tabela artist_follows tem unicidade por conta/artista e FKs para o catálogo e para records de usuários, com exclusões em cascata. PUT/DELETE são idempotentes; GET da lista usa snapshot e LIMIT/OFFSET no SQL. A contagem pública soma seguidores base importados aos vínculos locais sem alterar o valor base ao editar o nome do artista. Não há atualização em tempo real entre abas.
+
+Validação: 26 testes backend e 11 frontend, todos aprovados, além do build. Dois testes de integração cobrem autenticação, isolamento, idempotência, totais públicos, paginação, persistência em outro processo, edição sem inflar contadores e limpeza após excluir artista/conta.
+
+REA `ev_3ef9e0fc90b711d8f5ddedd49eb23dbb2d257c0e0de1a6abaf2e4e6613d0f382`: cenário completo na fixture isolada com build de produção: login demo → seguir Artist 1 → artista aparece na biblioteca → recarregar mantém vínculo → deixar de seguir → biblioteca vazia. GET/PUT/DELETE retornaram 200, sem erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: registrar histórico privado de escuta a partir da reprodução efetiva, com persistência por conta e visualização na biblioteca. OAuth, colaboração e arrastar/soltar continuam pendentes.

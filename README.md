@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 23 testes do backend (18 de API/sessão e cinco de armazenamento/migração) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 11 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas.
+Os 26 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 11 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas.
 
 ## Configuração e limites
 
@@ -46,7 +46,7 @@ Os 23 testes do backend (18 de API/sessão e cinco de armazenamento/migração) 
 - A migração do catálogo é única e mantém os registros antigos como snapshot. Álbum com faixas e artista referenciado não podem ser excluídos (409). Excluir uma faixa a remove das playlists e curtidas na mesma transação, atualizando as durações. Renomear um álbum se reflete nas faixas; a busca aceita título, artista e álbum.
 - O player usa três áudios instrumentais originais de demonstração, com 8, 10 e 12 segundos, servidos pela própria API. Os arquivos estão em `backend/public/audio/`; `python3 scripts/generate-demo-audio.py` os regenera.
 - A fila preserva a ordem selecionada, continua ao navegar, avança ao término e, com repetição desligada, para na última faixa. Selecionar a mesma faixa reinicia o áudio. “Anterior” reinicia a faixa após 3 segundos; antes disso, volta à anterior. Play/pause, busca na faixa e volume foram validados no navegador.
-- Playlists podem ser renomeadas, tornadas privadas, excluídas e ter faixas adicionadas/removidas e reordenadas pelo proprietário. A biblioteca autenticada mostra as playlists da própria conta.
+- Playlists podem ser renomeadas, tornadas privadas, excluídas e ter faixas adicionadas/removidas e reordenadas pelo proprietário. A biblioteca autenticada mostra as playlists e uma lista paginada de artistas seguidos pela própria conta. Na página de um artista é possível seguir/deixar de seguir; os vínculos persistem entre sessões.
 - A página **Meu perfil** permite editar nome e URL da foto, mantendo usuário e email como leitura. O nome é atualizado no cabeçalho e nas playlists da conta.
 - Perfis usam as mesmas contas da autenticação. Cada usuário acessa e edita apenas seu perfil; mudanças no catálogo exigem papel de administrador (sem provisionamento de administrador pela interface).
 - Curtidas são privadas por conta e aparecem em **Músicas curtidas**. Botões no catálogo, nos detalhes e no player compartilham o mesmo estado; os dados persistem após reiniciar.
@@ -57,7 +57,7 @@ Os 23 testes do backend (18 de API/sessão e cinco de armazenamento/migração) 
 - Requisições com acesso expirado compartilham uma renovação e são repetidas uma única vez. Recarregar restaura a sessão pelo cookie. Logout revoga a sessão no servidor, e reutilizar um refresh antigo revoga toda a família daquele login.
 - A atualização remove o antigo token do localStorage; sessões da versão anterior exigem novo login. Use frontend/API no mesmo site (em desenvolvimento, mantenha o mesmo hostname); para produção com origens distintas, configure `FRONTEND_ORIGIN`.
 - OAuth, arrastar e soltar e colaboração continuam pendentes. O protótipo destina-se a uso local.
-- Catálogo, busca, biblioteca, detalhes de artista/álbum e faixas de playlists têm paginação de 10, 20 ou 50 itens, com página/quantidade na URL. URLs fora do intervalo são corrigidas após carregar os totais. Uma nova busca começa na primeira página.
+- Catálogo, busca, biblioteca, detalhes de artista/álbum e faixas de playlists têm paginação de 10, 20 ou 50 itens, com página/quantidade na URL. URLs fora do intervalo são corrigidas após carregar os totais. Uma nova busca começa na primeira página. Artistas seguidos têm paginação independente na biblioteca, reiniciada ao reabrir a tela.
 - A fila iniciada por uma lista paginada usa somente as faixas da página atual. Playlists preservam a ordem global e permitem reordenar entre páginas. Adicionar música usa busca paginada, sem o limite anterior de 100 faixas.
 - Favoritos são paginados na interface; o contexto ainda carrega a coleção completa para compartilhar as curtidas entre telas. A API de catálogo aplica filtros, contagem e LIMIT/OFFSET no SQLite e carrega metadados apenas da página. A busca literal por substring pode percorrer o catálogo no banco.
 - Listas usam `TrackList` compartilhado e paginação reutilizável. Os dez arquivos antigos fora do fluxo foram removidos, junto com dependências sem uso. O único ponto de entrada web é `frontend/web/src/main.jsx`.

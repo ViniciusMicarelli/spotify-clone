@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { api, useAuth } from '../context/AuthContext';
+import FollowButton from '../components/FollowButton';
 import TrackList from '../components/TrackList';
 import Pagination from '../components/Pagination';
 import usePage from '../hooks/usePage';
@@ -33,6 +34,7 @@ export default function Catalog({ kind, search = false }) {
   return <section><p className="eyebrow">SEU ESPAÇO DE MÚSICA</p><h1>{id ? result?.detail.name || result?.detail.title || 'Carregando…' : search ? `Busca${query ? `: ${query}` : ''}` : titles[kind]}</h1>
     {kind === 'playlists' && !user && <p>Playlists públicas. <Link to="/auth/login">Entre para acessar sua biblioteca.</Link></p>}
     {error ? <p role="alert">{error}</p> : !result ? <p role="status">Carregando catálogo…</p> : <>
+      {kind === 'artists' && id && <FollowButton key={id} artist={result.detail} />}
       {isTracks ? <TrackList tracks={result.items} onPlay={play} offset={singleTrack ? 0 : paging.offset} /> : <div className="cards">{result.items.map(item => <Link className="card" key={item.id} to={`/${kind === 'playlists' ? 'playlist' : kind === 'artists' ? 'artist' : 'album'}/${item.id}`}><div className="cover">♫</div><h2>{item.name}</h2><p className="muted">{item.description || kind}</p></Link>)}{!result.items.length && <p>Nenhum resultado.</p>}</div>}
       {!singleTrack && <Pagination page={paging.page} size={paging.size} total={result.total} onPage={paging.setPage} onSize={paging.setSize} />}
       {isTracks && result.total > paging.size && <p className="muted">Ao ouvir, a fila usa as faixas desta página.</p>}
