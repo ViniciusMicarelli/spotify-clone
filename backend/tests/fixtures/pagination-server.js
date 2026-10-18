@@ -9,6 +9,14 @@ const { default: api } = await import('../../api-gateway/index.js');
 const { database, PersistentMap, transaction } = await import('../../data/store.js');
 const { saveCatalog, catalogValues } = await import('../../data/catalog.js');
 transaction(() => {
+  if (process.env.SEARCH_FIXTURE === '1') {
+    for (let i = 1; i <= 25; i++) {
+      const name = `Busca exemplo ${String(i).padStart(2, '0')}`;
+      const artist = saveCatalog('artists', { name, genres: ['Demo'] });
+      saveCatalog('albums', { name, artists: [artist.id] });
+    }
+    saveCatalog('artists', { name: 'Árvore / %_?' });
+  }
   for (let i = 1; i <= 118; i++) saveCatalog('tracks', { title: `Demo extra ${String(i).padStart(3,'0')}`, duration: 8000, artists: ['1'], albumId: '1', url: '/api/v1/audio/demo-1.wav' });
   const tracks = catalogValues('tracks').reverse();
   const ms = tracks.reduce((sum, track) => sum + track.duration, 0);

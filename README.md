@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 15 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas e contagem de tempo efetivamente ouvido e reordenação sem perder faixas fora da página.
+Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 17 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
 
 ## Configuração e limites
 
@@ -67,3 +67,7 @@ O histórico de escuta fica em `/history`, acessível pela biblioteca e pelo men
 O proprietário pode arrastar pela alça ⠿ na playlist e soltar sobre outra faixa da página para movê-la à posição do destino. A ordem só muda após confirmação da API. Subir/Descer continuam disponíveis por teclado e permitem atravessar páginas; dispositivos sem suporte ao arraste HTML usam esses botões. Arraste não troca páginas nem reorganiza a fila que já está tocando.
 
 O teste de navegador `frontend/web/tests/browser/playlist-drag.mjs` usa o build e uma fixture SQLite temporária com 121 faixas. Execute da raiz com Node.js, `PLAYWRIGHT_MODULE` apontando para o `index.mjs` de uma instalação de playwright-core e `BROWSER_EXECUTABLE` para um Chromium local: `node frontend/web/tests/browser/playlist-drag.mjs`. O teste inicia/encerra sua própria API e navegador; não usa os dados locais da aplicação.
+
+A busca permite escolher Músicas, Artistas ou Álbuns. Faixas aceitam título, artista e álbum; artistas e álbuns são buscados pelo próprio nome. O parâmetro `type=artists` ou `type=albums` guarda a escolha na URL; sem `type` a busca continua mostrando músicas. Trocar o tipo ou enviar outro termo reinicia a primeira página e preserva o tamanho escolhido (10/20/50). O campo acompanha o termo da URL, inclusive ao voltar no navegador. Cards abrem os detalhes, e consultas que falham têm botão de nova tentativa.
+
+`frontend/web/tests/browser/search.mjs` valida a busca no Chromium com 25 artistas/álbuns temporários, sem alterar dados locais. Usa as mesmas variáveis `PLAYWRIGHT_MODULE` e `BROWSER_EXECUTABLE` do teste de arraste e também deve ser executado da raiz após o build. A fixture só acrescenta esses registros quando `SEARCH_FIXTURE=1`.

@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import Catalog from './pages/Catalog';
+import Search from './pages/Search';
 import CreatePlaylist from './pages/CreatePlaylist';
 import Playlist from './pages/Playlist';
 import Favorites from './pages/Favorites';
@@ -19,7 +20,7 @@ export default function App() {
   return <Routes>
     <Route element={<Layout />}>
       <Route index element={<Catalog kind="tracks" />} />
-      <Route path="search/:query?" element={<Catalog kind="tracks" search />} />
+      <Route path="search/:query?" element={<Search />} />
       <Route path="profile" element={<Profile />} />
       <Route path="liked-songs" element={<Favorites />} />
       <Route path="history" element={<ListeningHistory />} />

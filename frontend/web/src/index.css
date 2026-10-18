@@ -12,3 +12,5 @@
 .pagination{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin:24px 0;font-size:13px;color:#b3b3b3}.pagination>div{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.pagination label{display:flex;align-items:center;gap:8px}.pagination select{background:#282828;color:#fff;border:1px solid #555;border-radius:6px;padding:8px}.pagination button{padding:8px 12px}.track-picker form{margin-bottom:20px}.track-picker .pagination{justify-content:flex-start}.track-picker .pagination>div{gap:8px}
 
 .drag-handle{cursor:grab;user-select:none;padding:10px 6px;font-size:24px;color:#b3b3b3}.drag-handle:active{cursor:grabbing}.drag-handle[draggable=false]{opacity:.4;cursor:default}.track-list article.drop-target{outline:2px solid #1ed760;outline-offset:-2px;background:#1db95422}
+
+.search-types{display:flex;flex-direction:row;gap:12px;flex-wrap:wrap;margin-bottom:24px}.search-types a{padding:10px 18px;border-radius:24px;background:#282828}.search-types a[aria-current=page]{background:#1db954;color:#061b0d}

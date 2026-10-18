@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 28 testes do backend e 15 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 28 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -163,4 +163,17 @@ Validação: 28 testes backend + 15 frontend e build aprovados. Dois testes de r
 
 REA `ev_09353c028ab05763f313596b061aa16583671de960cbd251fccc4acbe5d9bd01`: cenário completo confirmou alça e instruções, uso de Subir por teclado na posição 121, PUT 200, nova ordem e persistência após recarregar. Zero erros de página. O gesto nativo foi validado pelo roteiro Playwright separado, não pela REA, cujas ações anunciadas não incluem drag. Navegadores e fixtures temporários encerrados ao final.
 
-Próxima etapa sugerida: busca por artistas e álbuns na interface, além da busca atual de faixas, reaproveitando os filtros e a paginação SQL. OAuth e colaboração permanecem pendentes.
+Etapa seguinte concluída abaixo: busca por artistas e álbuns na interface. OAuth e colaboração permanecem pendentes.
+
+
+## Busca por músicas, artistas e álbuns — 18/10/2026
+
+A tela de busca tem links Músicas/Artistas/Álbuns e indica o tipo ativo. A URL guarda termo, tipo (`type=artists|albums`), tamanho e página. Sem tipo, ou com valor inválido, usa músicas; os caminhos antigos continuam válidos. Trocar tipo ou enviar um termo reinicia a primeira página, preservando tamanho. O campo do cabeçalho acompanha a URL e conserva o tipo ao pesquisar dentro da busca. Fora dela, uma busca nova começa por músicas.
+
+Faixas continuam buscando por título/artista/álbum; artistas e álbuns usam seus nomes. Os cards exibem seguidores/gêneros ou número de faixas e abrem detalhes. A leitura usa os endpoints SQL existentes, sem mudar contratos. Componentes são remontados por tipo/termo e consultas anteriores são canceladas para evitar resultados antigos. Um erro de catálogo oferece nova tentativa. Não há sugestões automáticas, busca global simultânea nem filtros avançados nesta etapa.
+
+Validação: 28 testes backend + 17 frontend e build aprovados. Dois testes unitários cobrem tipos permitidos, compatibilidade de URLs, termos codificados e reinício de página sem alterar os parâmetros originais. `frontend/web/tests/browser/search.mjs` passou no Chromium com API real/SQLite temporário e 25 artistas/álbuns: paginação e recarga, troca de tipo, novo termo, detalhes, acentos, barra e `%_?` literais, erro 500 seguido de nova tentativa e tipo inválido retornando à busca de músicas. Zero erros de página. O modo `SEARCH_FIXTURE=1` é exclusivo da fixture e não altera o catálogo real.
+
+REA `ev_951bad6f2d13c33707371c0f52a67cd1d417c9aefb126cfd44db51b525283366`: cenário completo confirmou página 2 de artistas, troca para álbuns reiniciando na primeira página, busca de Digital Dreams mantendo álbuns, abertura do álbum e busca/abertura de Artist 1. Respostas de artistas/álbuns retornaram 200, sem erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: completar metadados de artistas com biografia, país e foto, com validação na API e exibição nos detalhes. OAuth e colaboração permanecem pendentes; a busca avançada do plano maior ainda está parcial.
