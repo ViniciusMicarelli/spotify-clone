@@ -10,6 +10,7 @@ import Playlist from './pages/Playlist';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import Library from './pages/Library';
+import ListeningHistory from './pages/ListeningHistory';
 
 export default function App() {
   const ready = useAuthStore(state => state.ready);
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="search/:query?" element={<Catalog kind="tracks" search />} />
       <Route path="profile" element={<Profile />} />
       <Route path="liked-songs" element={<Favorites />} />
+      <Route path="history" element={<ListeningHistory />} />
       <Route path="library" element={<Library />} />
       <Route path="artist/:id" element={<Catalog kind="artists" />} />
       <Route path="album/:id" element={<Catalog kind="albums" />} />

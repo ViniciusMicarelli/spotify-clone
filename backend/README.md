@@ -87,3 +87,12 @@ Artistas seguidos (todas as rotas exigem autenticação):
 - `PUT /api/v1/me/followed-artists/:artistId` segue; `DELETE` deixa de seguir. Ambos são idempotentes e retornam o estado atualizado; artista inexistente retorna 404.
 
 A conta vem exclusivamente do token. A tabela SQLite `artist_follows` tem chave única conta/artista e FKs com exclusão em cascata para os artistas e registros de usuário. Listas têm paginação SQL e snapshot de leitura. `followers` no catálogo e no estado de follow soma o valor base importado aos vínculos locais; a escrita administrativa desse campo define somente o valor base. Editar outros metadados não incorpora a contagem derivada ao valor base. O total é público; a lista de artistas seguidos de cada conta é privada.
+
+
+Histórico de escuta (autenticado):
+
+- `GET /api/v1/me/history?limit=20&offset=0`: `{ data, pagination }`, mais recentes primeiro. Cada faixa inclui `playbackId` e `playedAt` (horário do servidor), além dos metadados atuais. Limites 1–100.
+- `PUT /api/v1/me/history/:playbackId`: corpo `{ "trackId": "1" }`, UUID v4 por tentativa de reprodução. Idempotente por conta/UUID; reutilizar UUID com outra faixa retorna 409. Faixa inexistente retorna 404; dados inválidos retornam 400.
+- `DELETE /api/v1/me/history`: limpa apenas o histórico da conta autenticada, de forma idempotente.
+
+A tabela `listening_history` usa FKs com exclusão em cascata para faixas/contas, índice por conta/sequência e paginação SQL em snapshot de leitura. Repetições reais da mesma faixa podem aparecer como registros distintos. O player envia após três segundos efetivamente tocados; a API recebe eventos declarados pelo cliente e não comprova escuta no servidor. Não há retenção automática, sincronização em tempo real ou envio offline. Uma nova reprodução em andamento pode gerar registro depois de uma limpeza.

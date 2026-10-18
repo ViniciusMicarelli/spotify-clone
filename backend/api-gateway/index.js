@@ -1,6 +1,7 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import express from 'express';
 import cors from 'cors';
+import history from '../services/history/history.js';
 import follows from '../services/follows/follows.js';
 import favorites from '../services/favorites/favorites.js';
 import { auth, users, tracks, albums, artists, playlists } from '../services/index.js';
@@ -25,6 +26,7 @@ app.use('/api/v1/artists', artists);
 app.use('/api/v1/playlists', playlists);
 app.use('/api/v1/me/liked-tracks', favorites);
 app.use('/api/v1/me/followed-artists', follows);
+app.use('/api/v1/me/history', history);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -43,7 +45,8 @@ app.get('/api/v1', (req, res) => {
       artists: '/api/v1/artists',
       playlists: '/api/v1/playlists',
       favorites: '/api/v1/me/liked-tracks',
-      following: '/api/v1/me/followed-artists'
+      following: '/api/v1/me/followed-artists',
+      history: '/api/v1/me/history'
     }
   });
 });

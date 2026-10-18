@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import FavoriteButton from '../FavoriteButton';
-import { api } from '../../context/AuthContext';
+import { createListenTracker } from '../../player/listen';
+import { api, useAuthStore, useAuth } from '../../context/AuthContext';
 
 const format = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function PlayerBar({ track, request, position, total, hasNext, shuffle, repeat, onShuffle, onRepeat, onEnded, onNext, onPrev }) {
   const audio = useRef(null);
+  const { generation } = useAuth();
+  const listen = useRef(null);
+  const [historyError, setHistoryError] = useState('');
   const [status, setStatus] = useState('idle');
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -15,6 +19,9 @@ export default function PlayerBar({ track, request, position, total, hasNext, sh
     const element = audio.current;
     let cancelled = false;
     element.pause();
+    const session = useAuthStore.getState();
+    listen.current = track && { tracker: createListenTracker(), playbackId: crypto.randomUUID(), trackId: track.id, generation: session.generation, userId: session.user?.id, pending: false, ready: false };
+    setHistoryError('');
     setTime(0); setDuration(0); setError(''); setStatus(track ? 'loading' : 'idle');
     if (track) {
       element.load();
@@ -27,6 +34,24 @@ export default function PlayerBar({ track, request, position, total, hasNext, sh
     return () => { cancelled = true; element.pause(); };
   }, [track?.id, source, request]);
   useEffect(() => { audio.current.volume = volume; }, [volume]);
+  async function saveListen(attempt) {
+    const session = useAuthStore.getState();
+    if (!attempt?.ready || attempt.pending || !attempt.userId || attempt.userId !== session.user?.id || attempt.generation !== session.generation) return;
+    attempt.pending = true;
+    try {
+      await api.put(`/me/history/${attempt.playbackId}`, { trackId: attempt.trackId });
+      if (listen.current === attempt) setHistoryError('');
+    } catch {
+      if (listen.current === attempt && useAuthStore.getState().generation === attempt.generation) setHistoryError('Não foi possível salvar esta reprodução no histórico.');
+    } finally { attempt.pending = false; }
+  }
+  function sampleListen(element) {
+    const attempt = listen.current;
+    if (attempt?.tracker.sample(element.currentTime, performance.now(), !element.paused && !element.seeking)) {
+      attempt.ready = true;
+      saveListen(attempt);
+    }
+  }
   function toggle() {
     const element = audio.current;
     if (!element.paused) { element.pause(); return; }
@@ -46,7 +71,8 @@ export default function PlayerBar({ track, request, position, total, hasNext, sh
   const labels = { idle: 'Nenhuma faixa selecionada', loading: 'Carregando áudio…', playing: 'Reproduzindo', paused: 'Pausado', ended: 'Fim da fila', error: 'Áudio indisponível' };
   return <footer className="player-bar" data-state={status} data-track-id={track?.id}>
     <div><strong>{track?.title || 'Selecione uma música'}</strong>{track && <FavoriteButton track={track} />}<p className="player-status"><output aria-label="Estado da reprodução">{labels[status]}</output>{track && ` · Faixa ${position} de ${total}`}</p>{error && <p role="alert">{error}</p>}</div>
-    <audio ref={audio} src={source} preload="metadata" onPlaying={() => { setStatus('playing'); setError(''); }} onPause={() => setStatus(current => current === 'playing' ? 'paused' : current)} onTimeUpdate={event => setTime(event.target.currentTime)} onLoadedMetadata={event => setDuration(Number.isFinite(event.target.duration) ? event.target.duration : 0)} onEnded={() => { setStatus('ended'); if (hasNext || repeat === 'one') onEnded(); }} onError={() => { if (track) { setStatus('error'); setError('Áudio indisponível. Tente novamente ou escolha outra faixa.'); } }} />
+    {historyError && listen.current?.generation === generation && <p role="alert">{historyError} <button onClick={() => saveListen(listen.current)}>Tentar salvar novamente</button></p>}
+    <audio ref={audio} src={source} preload="metadata" onPlaying={() => { setStatus('playing'); setError(''); sampleListen(audio.current); }} onPause={() => { listen.current?.tracker.breakInterval(); setStatus(current => current === 'playing' ? 'paused' : current); }} onSeeking={() => listen.current?.tracker.breakInterval()} onTimeUpdate={event => { setTime(event.target.currentTime); sampleListen(event.target); }} onLoadedMetadata={event => setDuration(Number.isFinite(event.target.duration) ? event.target.duration : 0)} onEnded={() => { setStatus('ended'); if (hasNext || repeat === 'one') onEnded(); }} onError={() => { if (track) { setStatus('error'); setError('Áudio indisponível. Tente novamente ou escolha outra faixa.'); } }} />
     <div className="playback"><div className="transport-controls"><button className="mode-button" aria-label="Aleatório" aria-pressed={shuffle} onClick={onShuffle}>Aleatório</button><button disabled={!track || !duration} onClick={previous}>Anterior</button><button disabled={!track} onClick={toggle}>{status === 'playing' ? 'Pausar' : 'Reproduzir'}</button><button disabled={!hasNext} onClick={onNext}>Próxima</button><button className="mode-button" aria-label="Repetição" aria-pressed={repeat !== 'off'} data-repeat={repeat} onClick={onRepeat}>Repetir: {{ off: 'desligado', all: 'fila', one: 'faixa' }[repeat]}</button></div>
       <label className="timeline">{format(time)}<input aria-label="Progresso da faixa" aria-valuenow={Number(time.toFixed(1))} type="range" min="0" max={duration || 0} value={Math.min(time, duration)} step="0.1" disabled={!duration} onChange={event => { const target = Number(event.target.value); audio.current.currentTime = target; setTime(target); if (status === 'ended') setStatus('paused'); }} />{format(duration)}</label>
     </div>

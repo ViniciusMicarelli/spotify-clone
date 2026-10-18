@@ -26,6 +26,7 @@ export default function Library() {
   }, [user?.id, generation, page, size, revision]);
   return <>
     <Catalog kind="playlists" />
+    {user && <p><Link to="/history">Ver histórico de escuta</Link></p>}
     {user && <section aria-label="Artistas seguidos"><h2>Artistas seguidos</h2>
       {error ? <p role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Tentar novamente</button></p> : !result || result.generation !== generation ? <p role="status">Carregando artistas…</p> : <>
         <div className="cards">{result.data.map(artist => <Link className="card" key={artist.id} to={`/artist/${artist.id}`}><div className="cover">♫</div><h3>{artist.name}</h3></Link>)}</div>

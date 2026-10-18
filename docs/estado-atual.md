@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 26 testes do backend e 11 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 28 testes do backend e 13 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -131,4 +131,23 @@ Validação: 26 testes backend e 11 frontend, todos aprovados, além do build. D
 
 REA `ev_3ef9e0fc90b711d8f5ddedd49eb23dbb2d257c0e0de1a6abaf2e4e6613d0f382`: cenário completo na fixture isolada com build de produção: login demo → seguir Artist 1 → artista aparece na biblioteca → recarregar mantém vínculo → deixar de seguir → biblioteca vazia. GET/PUT/DELETE retornaram 200, sem erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: registrar histórico privado de escuta a partir da reprodução efetiva, com persistência por conta e visualização na biblioteca. OAuth, colaboração e arrastar/soltar continuam pendentes.
+Etapa seguinte concluída abaixo: histórico privado de escuta com persistência por conta. OAuth, colaboração e arrastar/soltar continuam pendentes.
+
+
+## Histórico privado de escuta — 18/10/2026
+
+O player acumula intervalos reais de áudio tocando, sem contar pausas, stalls ou seeks, e envia um UUID v4 por tentativa após três segundos. Retomadas não duplicam o evento; nova seleção, avanço ou repeat criam outra tentativa. O evento fica ligado à conta/geração de sessão no início da tentativa: login ou troca de conta durante uma reprodução não transfere o registro. Falhas mostram nova tentativa, limitada à faixa/conta atuais; não há fila offline.
+
+A rota privada `/history` é acessível pela biblioteca e menu. Mostra data, metadados atuais, paginação 10/20/50 na URL e botão de limpeza. Repetições aparecem separadas, mas a fila criada ao ouvir pelo histórico contém faixas únicas da página. A lista aberta só se atualiza quando carregada novamente; não há atualização em tempo real. O servidor recebe eventos declarados pelo cliente, sem comprovação de escuta. Não há retenção automática; uma reprodução em andamento pode gerar novo registro após limpar.
+
+SQLite usa `listening_history`, unicidade conta/UUID, sequência decrescente, horário do servidor, FKs com cascata para conta/faixa, e snapshot para leitura paginada. PUT idempotente, validação e isolamento por conta foram testados, além de persistência em outro processo e limpeza após exclusão. Resultado: 28 testes backend + 13 frontend e build aprovados.
+
+REA em fixture isolada de produção:
+
+- `ev_e1763ad59da505f3b51efccdbe452d68b5bed47d995a67b0185c3e43f4558219` e `ev_5894db6fbb8db0d98a8fd6ccc84d7150ac45a5eeb03f97354872bb3f278d28aa`: gravação PUT 200 observada; cenários parciais por timeout ao aguardar pausa. Não comprovam retomada sem duplicação no navegador (essa regra tem teste unitário).
+- `ev_e1ebb1480615621def56811783633283e3d93489fe60a00dadb2064837956b7b`: cenário curto completo confirma reprodução e pausa como visitante.
+- `ev_62c8b608f6d9cd0695ef6dcf9c95e2a1830111eef4a20826f67f056ab5bacbda`: progresso real e PUT 200; parcial por timeout aguardando navegação pelo clique após reprodução.
+- `ev_2f38accf5356f94186782363a6edd44eea393d071305a6fa74c85d2e1e413e5a`: cenário completo em novo navegador confirma link na biblioteca, registro único persistido, restauração após recarregar e limpeza DELETE 200. Zero erros de página.
+- `ev_131a75e2577e31ad1e577112a6f99c4b3e28fc3f28f8979ce0a9c5ee6ca3e36f`: cenário completo confirma progresso acima de quatro segundos, PUT 200 e uma única faixa no histórico após navegar diretamente. Zero erros de página.
+
+Navegadores temporários e fixture encerrados ao final. Próxima etapa sugerida: arrastar e soltar para reordenar faixas de playlists, mantendo os botões acessíveis e a validação de ordem existente na API. OAuth e colaboração permanecem pendentes.

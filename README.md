@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 26 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 11 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas.
+Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 13 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas e contagem de tempo efetivamente ouvido.
 
 ## Configuração e limites
 
@@ -61,3 +61,5 @@ Os 26 testes do backend usam diretórios temporários e portas aleatórias. Vali
 - A fila iniciada por uma lista paginada usa somente as faixas da página atual. Playlists preservam a ordem global e permitem reordenar entre páginas. Adicionar música usa busca paginada, sem o limite anterior de 100 faixas.
 - Favoritos são paginados na interface; o contexto ainda carrega a coleção completa para compartilhar as curtidas entre telas. A API de catálogo aplica filtros, contagem e LIMIT/OFFSET no SQLite e carrega metadados apenas da página. A busca literal por substring pode percorrer o catálogo no banco.
 - Listas usam `TrackList` compartilhado e paginação reutilizável. Os dez arquivos antigos fora do fluxo foram removidos, junto com dependências sem uso. O único ponto de entrada web é `frontend/web/src/main.jsx`.
+
+O histórico de escuta fica em `/history`, acessível pela biblioteca e pelo menu. O player registra uma reprodução após três segundos de áudio tocando, sem somar pausas, travamentos ou saltos na barra. Retomar a mesma tentativa não duplica o registro; uma nova seleção, repetição automática ou avanço da fila inicia outra tentativa. A lista privada mostra registros mais recentes primeiro, com data, paginação e opção de limpar. Visitantes não registram histórico; falhas de gravação mostram uma opção de tentar novamente enquanto a faixa continua selecionada. Não há fila offline nem atualização em tempo real da lista aberta.
