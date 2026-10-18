@@ -52,3 +52,15 @@ test('album year URLs preserve artist and size while resetting page and clearing
   for (const type of ['tracks', 'artists']) assert.equal(new URL('https://example.test' + searchUrl('Demo', params, type)).searchParams.has('year'), false);
   assert.equal(params.get('page'), '3'); assert.equal(params.get('year'), '2023');
 });
+
+test('album sort URLs reset page and preserve filters, default clears sort and other types discard it', async () => {
+  const { albumSortUrl, albumYearUrl } = await import('../src/utils/search.js');
+  const params = new URLSearchParams('type=albums&page=3&artistId=1&year=2024&size=10&sort=year_desc');
+  const next = new URL('https://example.test' + albumSortUrl('Demo', params, 'name_asc'));
+  assert.equal(next.searchParams.get('sort'), 'name_asc'); assert.equal(next.searchParams.has('page'), false);
+  for (const [key, value] of [['artistId','1'],['year','2024'],['size','10']]) assert.equal(next.searchParams.get(key), value);
+  assert.equal(new URL('https://example.test' + albumSortUrl('Demo', params, 'default')).searchParams.has('sort'), false);
+  assert.equal(new URL('https://example.test' + albumYearUrl('Demo', params, '2020')).searchParams.get('sort'), 'year_desc');
+  for (const type of ['tracks','artists']) assert.equal(new URL('https://example.test' + searchUrl('Demo', params, type)).searchParams.has('sort'), false);
+  assert.equal(params.get('page'), '3');
+});

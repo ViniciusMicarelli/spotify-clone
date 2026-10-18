@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 38 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 20 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
+Os 39 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 21 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
 
 ## Configuração e limites
 
@@ -87,3 +87,5 @@ Na busca de artistas, o seletor Gênero do artista combina um gênero exato com 
 A busca de álbuns tem filtro por artista. Busque um nome na seção Artista do álbum, escolha um resultado e clique em Aplicar artista. A seleção de artistas tem páginas próprias de 20 itens, independentes dos álbuns, e não limita a escolha aos primeiros resultados. `artistId` fica na URL e é preservado ao pesquisar outro título; aplicar/limpar reinicia a página dos álbuns e mantém seu tamanho. Sair da busca de álbuns remove o filtro. Colaborações aparecem para qualquer artista associado, sem duplicação. Um artista indisponível pode ser limpo e falhas da seleção têm nova tentativa. `frontend/web/tests/browser/album-artists.mjs` valida o fluxo com dados temporários.
 
 Álbuns também podem ser filtrados por ano exato: informe 1–9999 e clique em Aplicar ano. O parâmetro `year` combina com artista e título, persiste na URL e é preservado em novas buscas. Aplicar/limpar reinicia a página dos álbuns sem remover artista ou tamanho; sair da busca de álbuns remove ano/artista. Um link com ano inválido mostra o erro da API e permite Limpar ano. Álbuns sem ano informado ficam fora de filtros por ano. O roteiro `frontend/web/tests/browser/album-years.mjs` valida a combinação com a fixture temporária ALBUM_YEAR_FIXTURE.
+
+Em álbuns, Ordenar álbuns oferece Padrão, Nome A–Z/Z–A e Ano mais recentes/mais antigos. A escolha fica em `sort` na URL, preserva artista/ano/termo/tamanho e reinicia a primeira página ao mudar. Anos não informados ficam no final nos dois modos de ano; empates têm ordem estável. Novas buscas e filtros mantêm a ordenação, e mudar de tipo a remove. URLs com ordenação inválida permitem voltar a Padrão. O roteiro `frontend/web/tests/browser/album-sort.mjs` valida os modos e sua combinação com filtros na fixture isolada.

@@ -280,3 +280,24 @@ test('album year filter validates input and combines year, artist, title and SQL
   assert.equal((await request('/albums?year=2023&year=2024')).status, 400);
   assert.equal((await request('/artists?year=2024')).status, 400);
 });
+
+test('album sorting is allowlisted and stable across pages with unknown years last', async () => {
+  const { saveCatalog } = await import('../data/catalog.js');
+  const input = [{ name: 'Sort Suite Zeta', year: 2020 }, { name: 'Sort Suite alpha', year: 2024 }, { name: 'Sort Suite Beta', year: 2024 }, { name: 'Sort Suite Beta', year: 2024 }, { name: 'Sort Suite Unknown' }];
+  const albums = input.map(value => saveCatalog('albums', { ...value, artists: ['1'] }));
+  const expected = { default: [0,1,2,3,4], name_asc: [1,2,3,4,0], name_desc: [0,4,2,3,1], year_desc: [1,2,3,0,4], year_asc: [0,1,2,3,4] };
+  for (const [sort, indexes] of Object.entries(expected)) {
+    const seen = [];
+    for (const offset of [0,2,4]) {
+      const response = await request('/albums?' + new URLSearchParams({ search: 'Sort Suite', artistId: '1', sort, limit: '2', offset: String(offset) }));
+      assert.equal(response.status, 200); assert.equal(response.data.pagination.total, 5);
+      seen.push(...response.data.data.map(value => value.id));
+    }
+    assert.deepEqual(seen, indexes.map(index => albums[index].id));
+  }
+  const filtered = await request('/albums?search=Sort%20Suite&artistId=1&year=2024&sort=name_desc');
+  assert.deepEqual(filtered.data.data.map(value => value.id), [albums[2].id,albums[3].id,albums[1].id]);
+  for (const sort of ['', '__proto__', 'name;DROP TABLE catalog_albums', 'constructor']) assert.equal((await request('/albums?' + new URLSearchParams({ sort }))).status, 400);
+  assert.equal((await request('/albums?sort=name_asc&sort=year_desc')).status, 400);
+  assert.equal((await request('/artists?sort=name_asc')).status, 400);
+});

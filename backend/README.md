@@ -123,3 +123,6 @@ O filtro existente `GET /api/v1/albums?artistId=<id>&search=<nome>&limit=10&offs
 
 
 `GET /api/v1/albums?year=2024&artistId=1&search=Demo&limit=10&offset=0` combina ano exato, associação de artista e nome, com contagem/paginação no SQL. O ano consulta o valor numérico no metadata JSON. Anos ausentes/null não correspondem. O parâmetro deve ter de 1 a 4 dígitos, começar em 1–9 e representar 1–9999; vazio, repetido, decimal, sinal, zeros à esquerda ou ano em outro tipo de catálogo retornam 400. Ano válido sem correspondência retorna zero resultados.
+
+
+A listagem de álbuns aceita `sort=default|name_asc|name_desc|year_asc|year_desc`. Omissão/default mantém inserção. Nome usa catalog_lower (minúsculas Unicode), comparação binária do SQLite e rowid crescente como desempate; não é ordenação linguística de português nem ignora acentos. Ano deixa null/ausente por último em ambos os sentidos e desempata por nome crescente e rowid. ORDER BY vem exclusivamente de uma lista fixa, aplicado antes de LIMIT/OFFSET e com os mesmos filtros da contagem. Ordenação inválida, repetida ou enviada a outro tipo de catálogo retorna 400. Estabilidade é para um catálogo sem alterações entre páginas; não há snapshot compartilhado entre requisições.

@@ -2,17 +2,18 @@ import express from 'express';
 import { database } from '../../data/store.js';
 import { audioWaveform } from '../../data/audio-metadata.js';
 import authMiddleware from '../../middleware/auth.js';
-import { getCatalog, listCatalog, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
+import { getCatalog, listCatalog, ALBUM_ORDERS, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
 import { parsePagination } from '../../utils/pagination.js';
 const enrich = (kind, value) => kind !== 'tracks' ? value : trackDetails(value);
 function routerFor(kind) {
   const router = express.Router();
   router.get('/', (req,res) => {
-    const { search = '', artistId, albumId, genre, year } = req.query;
+    const { search = '', artistId, albumId, genre, year, sort } = req.query;
     const pagination = parsePagination(req.query);
     if (!pagination || [search, artistId, albumId, genre].some(value => value !== undefined && typeof value !== 'string')) return res.status(400).json({ error: 'Filtros ou paginação inválidos.' });
     if (year !== undefined && (kind !== 'albums' || typeof year !== 'string' || !/^[1-9]\d{0,3}$/.test(year))) return res.status(400).json({ error: 'Ano inválido. Use um inteiro entre 1 e 9999.' });
-    res.json(listCatalog(kind, { ...pagination, search, artistId, albumId, genre, year }));
+    if (sort !== undefined && (kind !== 'albums' || typeof sort !== 'string' || !Object.hasOwn(ALBUM_ORDERS, sort))) return res.status(400).json({ error: 'Ordenação inválida.' });
+    res.json(listCatalog(kind, { ...pagination, search, artistId, albumId, genre, year, sort }));
   });
   if (kind === 'tracks') router.get('/:id/waveform', (req, res) => {
     const track = getCatalog('tracks', req.params.id);

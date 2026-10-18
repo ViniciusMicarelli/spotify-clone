@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 38 testes do backend e 20 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 39 testes do backend e 21 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -265,4 +265,17 @@ Validação: 38 testes backend + 20 frontend e build aprovados. Integração cob
 
 REA `ev_f2b14a0f3eda8afa07db2426d51a03ef79b8e409386c37d1b49e4e58f3043e43`: cenário completo confirmou ano 2024 combinado com Artist 1, 25 resultados, página 2, restauração após recarregar e limpeza reiniciando a página sem perder o artista. Zero erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: ordenar resultados de álbuns por nome ou ano, mantendo filtros e paginação estável. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+Etapa seguinte concluída abaixo: ordenação de álbuns por nome ou ano. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+
+
+## Ordenação de álbuns — 18/10/2026
+
+Sort aceita default, name_asc/name_desc e year_asc/year_desc apenas na listagem de álbuns. SQL usa uma lista fixa de expressões, sem interpolar valores do cliente em ORDER BY. Padrão mantém inserção; nome ignora caixa com catalog_lower mas usa comparação binária, sem colação linguística/remoção de acentos. Ano deixa ausentes/null ao final em ambas as direções; desempates usam nome e rowid. Contagem/filtros/snapshot por requisição continuam os mesmos. Alterações entre páginas ainda podem mudar a ordem; não há cursor ou snapshot entre requisições.
+
+A escolha fica na URL, preserva artista/ano/termo/tamanho e reinicia página ao mudar. Filtros e novo termo mantêm sort; troca de tipo remove. Valor inválido fica indicado no seletor e permite recuperar por Padrão. Nenhum dado real foi alterado, e o sistema de desenvolvimento permanece em 127.0.0.1:5174, com API atualizada.
+
+Validação: 39 testes backend + 21 frontend e build aprovados. Integração cobre todas as ordens, empates, três páginas sem duplicação/omissão, anos ausentes, filtros combinados e valores inválidos/repetidos/injeção. Teste de URL cobre preservação, reset, padrão e troca de tipo. `album-sort.mjs` passou no Chromium: quatro modos, paginação/recarga, anos ausentes no final, filtros, novo termo, recuperação de inválido e troca de tipo; zero erros de página. Usa ALBUM_YEAR_FIXTURE e ALBUM_SORT_FIXTURE isoladas.
+
+REA `ev_ba31f279c689e6a2feb5b98a880804021ef469d614937d7ceb21ceb9b37fdfdc`: cenário completo confirmou nome descendente, anos crescente/decrescente, página 2 e restauração com filtros/ordenação na URL. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: ordenação de artistas por nome e seguidores, preservando gênero e termo. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.

@@ -83,8 +83,17 @@ export function trackDetails(track) { return { ...track, artistDetails: track.ar
 export function catalogValues(kind) { return rows(`SELECT id FROM catalog_${kind} ORDER BY rowid`).map(value => getCatalog(kind, value.id)); }
 // Match JavaScript's Unicode casing and literal substring semantics in SQL.
 db.function('catalog_lower', { deterministic: true }, value => value.toLowerCase());
-export function listCatalog(kind, { limit, offset, search = '', artistId, albumId, genre, year }) {
+export const ALBUM_ORDERS = Object.freeze({
+  default: 'c.rowid ASC',
+  name_asc: 'catalog_lower(c.name) ASC, c.rowid ASC',
+  name_desc: 'catalog_lower(c.name) DESC, c.rowid ASC',
+  year_asc: "json_extract(c.metadata, '$.year') IS NULL ASC, json_extract(c.metadata, '$.year') ASC, catalog_lower(c.name) ASC, c.rowid ASC",
+  year_desc: "json_extract(c.metadata, '$.year') IS NULL ASC, json_extract(c.metadata, '$.year') DESC, catalog_lower(c.name) ASC, c.rowid ASC"
+});
+export function listCatalog(kind, { limit, offset, search = '', artistId, albumId, genre, year, sort = 'default' }) {
   if (!kinds.includes(kind)) throw new Error('Tipo de catálogo inválido.');
+  if (!Object.hasOwn(ALBUM_ORDERS, sort) || (kind !== 'albums' && sort !== 'default')) fail('Ordenação inválida.');
+  const order = kind === 'albums' ? ALBUM_ORDERS[sort] : 'c.rowid ASC';
   const predicates = [], parameters = [];
   if (search) {
     const text = kind === 'tracks'
@@ -109,7 +118,7 @@ export function listCatalog(kind, { limit, offset, search = '', artistId, albumI
   db.exec('SAVEPOINT catalog_page');
   try {
     const total = row(`SELECT count(*) AS total ${from}`, ...parameters).total;
-    const data = rows(`SELECT c.id ${from} ORDER BY c.rowid LIMIT ? OFFSET ?`, ...parameters, limit, offset)
+    const data = rows(`SELECT c.id ${from} ORDER BY ${order} LIMIT ? OFFSET ?`, ...parameters, limit, offset)
       .map(({ id }) => { const value = getCatalog(kind, id); return kind === 'tracks' ? trackDetails(value) : value; });
     db.exec('RELEASE catalog_page');
     return { data, pagination: { limit, offset, total } };
