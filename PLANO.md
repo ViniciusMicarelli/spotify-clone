@@ -9,7 +9,7 @@
 - REA validou no Chromium: login demo, catálogo, criação de playlist e busca; nenhum erro de página registrado. Evidência e limites em `docs/estado-atual.md`.
 - Player usa HTMLAudioElement com três áudios instrumentais locais gerados para demonstração (8, 10 e 12 segundos). REA confirmou reprodução com progresso, pausa/retomada, busca, volume, próxima/anterior, fim natural, encerramento da fila e recuperação de erro.
 - Perfis e autenticação usam o mesmo armazenamento. Perfis e mutações de playlists são restritos ao proprietário; playlists privadas ficam ocultas de outras contas. Catálogo exige administrador para mutações.
-- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 28 testes do backend e 13 testes do frontend (fila/paginação/escuta) aprovados, incluindo persistência em novo processo.
+- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 28 testes do backend e 15 testes do frontend (fila/paginação/escuta/reordenação) aprovados, incluindo persistência em novo processo.
 - REA confirmou edição de playlist e reabertura em nova sessão; evidências em `docs/estado-atual.md`.
 - Reordenação por botões subir/descer implementada; a API valida que a lista contém exatamente as faixas atuais. Favoritos privados por conta disponíveis no catálogo, detalhes, player e página Músicas curtidas.
 - Testes confirmam que ordem e curtidas persistem em novo processo. REA confirmou reordenação e o fluxo curtir → Músicas curtidas → descurtir em cenários separados.
@@ -20,7 +20,8 @@
 - Filtros, contagem e paginação do catálogo executam no SQL, com busca Unicode literal e leitura consistente da página.
 - Seguir/deixar de seguir artistas implementado por conta, com biblioteca paginada, persistência e contagem de seguidores. REA confirmou seguir, recarregar a biblioteca e deixar de seguir.
 - Histórico privado de escuta implementado após três segundos efetivamente reproduzidos, com paginação, limpeza e persistência por conta. REA confirmou registro, restauração e limpeza.
-- OAuth, arrastar e soltar e colaboração continuam pendentes.
+- Arrastar e soltar na página atual da playlist implementado para o proprietário; botões Subir/Descer preservados para teclado e mudança entre páginas. Teste de navegador confirmou arraste, persistência, falha e permissões.
+- OAuth e colaboração continuam pendentes.
 - Página Meu perfil implementada: edição de nome/foto, atualização no cabeçalho e nos donos das playlists, persistência após recarregar. REA confirmou o fluxo.
 - Migração, rollback, savepoints e concorrência entre processos validados em testes isolados. Dados locais migrados com igualdade das sete coleções antes da edição do perfil.
 - Os checklists abaixo representam o escopo completo: um esboço ou implementação parcial não conclui um item.
@@ -221,7 +222,7 @@ spotify-clone/
 - [x] Volume control
 - [ ] Visualizador de waveforms
 - [x] Progresso da faixa
-- [ ] Drag & drop para faixas
+- [x] Drag & drop para faixas
 - [ ] Sincronização entre dispositivos
 
 ### Prioridade 4 - Playlists (Semana 11-14)

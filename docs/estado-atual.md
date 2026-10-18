@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 28 testes do backend e 13 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 28 testes do backend e 15 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -150,4 +150,17 @@ REA em fixture isolada de produção:
 - `ev_2f38accf5356f94186782363a6edd44eea393d071305a6fa74c85d2e1e413e5a`: cenário completo em novo navegador confirma link na biblioteca, registro único persistido, restauração após recarregar e limpeza DELETE 200. Zero erros de página.
 - `ev_131a75e2577e31ad1e577112a6f99c4b3e28fc3f28f8979ce0a9c5ee6ca3e36f`: cenário completo confirma progresso acima de quatro segundos, PUT 200 e uma única faixa no histórico após navegar diretamente. Zero erros de página.
 
-Navegadores temporários e fixture encerrados ao final. Próxima etapa sugerida: arrastar e soltar para reordenar faixas de playlists, mantendo os botões acessíveis e a validação de ordem existente na API. OAuth e colaboração permanecem pendentes.
+Navegadores temporários e fixture encerrados ao final. Etapa seguinte concluída abaixo: arrastar e soltar para reordenar faixas de playlists. OAuth e colaboração permanecem pendentes.
+
+
+## Arrastar e soltar em playlists — 18/10/2026
+
+O proprietário tem uma alça HTML draggable em cada faixa. Soltar sobre outra faixa move à posição original do destino; o contorno verde sinaliza o destino. O cálculo usa todos os IDs da playlist, preservando faixas fora da página. Arrastes externos, sobre a própria faixa ou de outra página/sessão não enviam ordem; cancelamento limpa o destaque. Só há atualização após resposta bem-sucedida, e uma trava síncrona evita mutações simultâneas. O gesto não muda a fila de reprodução existente.
+
+Subir/Descer continuam acessíveis por teclado e atravessam páginas. O arraste opera somente dentro da página atual, sem navegação automática. Dispositivos sem arraste HTML usam os botões; toque não foi validado. A API existente mantém permissões e validação de permutação, sem mudanças no contrato.
+
+Validação: 28 testes backend + 15 frontend e build aprovados. Dois testes de reordenação cobrem direção, entradas inválidas, preservação da origem e das faixas fora da página. `frontend/web/tests/browser/playlist-drag.mjs` passou no Chromium com uma fixture de produção e 121 faixas: movimentos reais do mouse para cima/baixo, recarga, mesmo destino, cancelamento com Escape, erro 500 sem alteração, botão por teclado entre páginas e ausência de controles para visitante. Zero erros de página. As primeiras tentativas do roteiro falharam por posicionamento do gesto junto ao player fixo; centralizar as linhas antes do mouse resolveu. O teste de falha também passou após usar o mesmo posicionamento.
+
+REA `ev_09353c028ab05763f313596b061aa16583671de960cbd251fccc4acbe5d9bd01`: cenário completo confirmou alça e instruções, uso de Subir por teclado na posição 121, PUT 200, nova ordem e persistência após recarregar. Zero erros de página. O gesto nativo foi validado pelo roteiro Playwright separado, não pela REA, cujas ações anunciadas não incluem drag. Navegadores e fixtures temporários encerrados ao final.
+
+Próxima etapa sugerida: busca por artistas e álbuns na interface, além da busca atual de faixas, reaproveitando os filtros e a paginação SQL. OAuth e colaboração permanecem pendentes.

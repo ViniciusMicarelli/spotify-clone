@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 13 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas e contagem de tempo efetivamente ouvido.
+Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 15 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas e contagem de tempo efetivamente ouvido e reordenação sem perder faixas fora da página.
 
 ## Configuração e limites
 
@@ -63,3 +63,7 @@ Os 28 testes do backend usam diretórios temporários e portas aleatórias. Vali
 - Listas usam `TrackList` compartilhado e paginação reutilizável. Os dez arquivos antigos fora do fluxo foram removidos, junto com dependências sem uso. O único ponto de entrada web é `frontend/web/src/main.jsx`.
 
 O histórico de escuta fica em `/history`, acessível pela biblioteca e pelo menu. O player registra uma reprodução após três segundos de áudio tocando, sem somar pausas, travamentos ou saltos na barra. Retomar a mesma tentativa não duplica o registro; uma nova seleção, repetição automática ou avanço da fila inicia outra tentativa. A lista privada mostra registros mais recentes primeiro, com data, paginação e opção de limpar. Visitantes não registram histórico; falhas de gravação mostram uma opção de tentar novamente enquanto a faixa continua selecionada. Não há fila offline nem atualização em tempo real da lista aberta.
+
+O proprietário pode arrastar pela alça ⠿ na playlist e soltar sobre outra faixa da página para movê-la à posição do destino. A ordem só muda após confirmação da API. Subir/Descer continuam disponíveis por teclado e permitem atravessar páginas; dispositivos sem suporte ao arraste HTML usam esses botões. Arraste não troca páginas nem reorganiza a fila que já está tocando.
+
+O teste de navegador `frontend/web/tests/browser/playlist-drag.mjs` usa o build e uma fixture SQLite temporária com 121 faixas. Execute da raiz com Node.js, `PLAYWRIGHT_MODULE` apontando para o `index.mjs` de uma instalação de playwright-core e `BROWSER_EXECUTABLE` para um Chromium local: `node frontend/web/tests/browser/playlist-drag.mjs`. O teste inicia/encerra sua própria API e navegador; não usa os dados locais da aplicação.
