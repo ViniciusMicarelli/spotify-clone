@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 29 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 30 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -189,4 +189,17 @@ Validação: 29 testes backend + 17 frontend e build aprovados. Novo teste de in
 
 REA `ev_d833555cbef220f0daccfdad89265338cbdb579eea7f9b3f11ad05613c1b4d79`: cenário completo confirma foto na busca, abertura do artista, biografia/país/gêneros, restauração após recarregar e alternativa após foto 404. Foto local retornou 200/304; nenhum erro de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: completar metadados de álbuns com ano, gêneros, capa e duração derivada das faixas. OAuth e colaboração permanecem pendentes.
+Etapa seguinte concluída abaixo: metadados de álbuns. OAuth e colaboração permanecem pendentes.
+
+
+## Metadados de álbuns — 18/10/2026
+
+A API administrativa aceita year opcional (inteiro 1–9999, null remove), genres e images com a validação já usada para artistas. Campos adicionais ficam no metadata JSON, preservando o catálogo legado sem inventar anos ou gêneros. Duration e totalTracks são derivados de SUM/COUNT no SQLite, abrangendo todas as faixas do álbum e excluídos do metadata persistido em novas gravações. Não aceitam escrita; duração muda após editar/mover/excluir faixas. Álbum vazio retorna 0:00.
+
+Busca e detalhes mostram capa, ano e duração; detalhes incluem gêneros. CatalogImage compartilha resolução de URL, imagem acessível e alternativa de falha entre fotos de artistas e capas, mantendo ArtistImage como adaptador. O SVG de capa de demonstração é um desenho geométrico local. A interface não tem editor administrativo/upload; gênero de álbum ainda não é filtro de busca.
+
+Validação: 30 testes backend + 17 frontend e build aprovados. Novo teste cobre limites, rollback, normalização, persistência em novo processo, duração zero, soma, edição, transferência e exclusão de faixas. Roteiros Chromium album-details e artist-details aprovados: capa na busca/detalhes, ano/gêneros/duração, recarga, viewport de 390px e alternativa para capa quebrada, além da regressão de retratos de artistas. Zero erros de página; o 404 da imagem quebrada é deliberado.
+
+REA `ev_646ed2ad5ad5d565bfed5b1ad88a1dfdba0671b0dccfb3e9730cf833da046fa7`: cenário completo confirmou capa na busca, abertura de Digital Dreams, ano 2024, gêneros, duração 0:10, restauração após recarregar e alternativa na capa quebrada de Summer Vibes. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: metadados técnicos das faixas de demonstração (codec, bitrate, canais e taxa de amostragem), derivados dos arquivos locais. OAuth e colaboração permanecem pendentes.

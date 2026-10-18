@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 29 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 17 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
+Os 30 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 17 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
 
 ## Configuração e limites
 
@@ -75,3 +75,5 @@ A busca permite escolher Músicas, Artistas ou Álbuns. Faixas aceitam título, 
 Artistas exibem biografia, país, gêneros e retrato nos detalhes; a foto também aparece na busca e na biblioteca. Dados ausentes têm indicação explícita, e imagens que falham usam um símbolo de música. Metadados são editados pela API administrativa: `biography` (até 5.000 caracteres), `country` (texto de até 100), `genres` e `images`. Artistas existentes não recebem biografias ou países inventados. Não há upload de fotos nem editor administrativo na interface.
 
 O teste `frontend/web/tests/browser/artist-details.mjs` usa as mesmas variáveis de Chromium/Playwright dos demais roteiros. Cria uma fixture com `ARTIST_FIXTURE=1`, verifica detalhes, recarga, foto na busca, imagens ausentes/quebradas e viewport móvel. O retrato local de demonstração é um SVG genérico feito no projeto; não representa uma pessoa real.
+
+Álbuns mostram capa, ano, gêneros, quantidade de faixas e duração total nos detalhes; os cards de busca incluem capa, ano e duração. Ano é opcional, sem valores inventados para registros antigos. A API aceita `year` inteiro entre 1 e 9.999 (ou `null` para remover) e `genres`, com as mesmas regras de imagens/gêneros dos artistas. Quantidade e duração são calculadas no SQLite a partir de todas as faixas, acompanhando edições, transferências e exclusões. `duration` não aceita escrita administrativa. O roteiro `frontend/web/tests/browser/album-details.mjs` valida a interface com `ALBUM_FIXTURE=1`, usando as mesmas variáveis de execução dos outros testes de navegador.

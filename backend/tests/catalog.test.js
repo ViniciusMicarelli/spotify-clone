@@ -191,3 +191,29 @@ test('artist biography, country, photos and genres validate atomically and persi
   assert.equal(cleared.data.data.biography, ''); assert.equal(cleared.data.data.country, '');
   assert.deepEqual(cleared.data.data.images, []);
 });
+
+test('album metadata persists and duration follows track edits, moves and deletion', async () => {
+  const album = await create('albums', { name: 'Metadata Album', year: 2024, genres: [' Jazz ', 'Jazz'], artists: ['1'], images: [{ url: '/api/v1/images/album-demo.svg', width: 320, height: 320 }] });
+  assert.deepEqual(album.genres, ['Jazz']);
+  assert.deepEqual(album.duration, { ms: 0, formatted: '0:00' });
+  for (const fields of [{ year: '2024' }, { year: 0 }, { year: 10000 }, { year: 1.5 }, { genres: [''] }, { genres: ['x'.repeat(81)] }, { images: [{ url: 'data:image/png;base64,AAAA' }] }, { images: [{ url: 'https://example.com/a.jpg', width: -1 }] }, { duration: { ms: 999 } }]) {
+    assert.equal((await request('/albums/' + album.id, 'PUT', { name: 'Invalid change', ...fields })).status, 400);
+    assert.equal(getCatalog('albums', album.id).name, 'Metadata Album');
+  }
+  const first = await create('tracks', { title: 'First metadata track', duration: 61000, artists: ['1'], albumId: album.id, url: '/api/v1/audio/demo-1.wav' });
+  const second = await create('tracks', { title: 'Second metadata track', duration: 8000, artists: ['1'], albumId: album.id, url: '/api/v1/audio/demo-1.wav' });
+  assert.deepEqual(getCatalog('albums', album.id).duration, { ms: 69000, formatted: '1:09' });
+  await request('/tracks/' + first.id, 'PUT', { duration: 62000 });
+  assert.equal(getCatalog('albums', album.id).duration.ms, 70000);
+  await request('/tracks/' + second.id, 'PUT', { albumId: '1' });
+  assert.equal(getCatalog('albums', album.id).totalTracks, 1);
+  assert.equal(getCatalog('albums', album.id).duration.ms, 62000);
+  const module = new URL('../data/catalog.js', import.meta.url).href;
+  const persisted = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `const {getCatalog}=await import(${JSON.stringify(module)}); console.log(JSON.stringify(getCatalog('albums',${JSON.stringify(album.id)})));`], { encoding: 'utf8', env: process.env }));
+  assert.equal(persisted.year, 2024); assert.deepEqual(persisted.genres, ['Jazz']); assert.equal(persisted.duration.ms, 62000);
+  await request('/tracks/' + first.id, 'DELETE');
+  assert.deepEqual(getCatalog('albums', album.id).duration, { ms: 0, formatted: '0:00' });
+  assert.equal((await request('/albums/' + album.id, 'PUT', { year: null, genres: [], images: [] })).data.data.year, null);
+  await request('/tracks/' + second.id, 'DELETE');
+  await request('/albums/' + album.id, 'DELETE');
+});

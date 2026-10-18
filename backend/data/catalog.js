@@ -19,7 +19,7 @@ function write(kind, value) {
     run('DELETE FROM catalog_artist_genres WHERE artist_id = ?', value.id);
     [...new Set(value.genres || [])].forEach((genre, position) => run('INSERT INTO catalog_artist_genres VALUES (?,?,?)', value.id, genre, position));
   } else if (kind === 'albums') {
-    run('INSERT INTO catalog_albums(id,name,images,uri,metadata) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,images=excluded.images,uri=excluded.uri,metadata=excluded.metadata', value.id, value.name, JSON.stringify(value.images || []), value.uri || `spotify:album:${value.id}`, extra(value, ['id','name','images','uri','artists','tracks','totalTracks']));
+    run('INSERT INTO catalog_albums(id,name,images,uri,metadata) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,images=excluded.images,uri=excluded.uri,metadata=excluded.metadata', value.id, value.name, JSON.stringify(value.images || []), value.uri || `spotify:album:${value.id}`, extra(value, ['id','name','images','uri','artists','tracks','totalTracks','duration']));
     links('catalog_album_artists', 'album_id', value.id, [...new Set(value.artists || [])]);
   } else {
     run('INSERT INTO catalog_tracks(id,title,duration,album_id,url,uri,metadata) VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,duration=excluded.duration,album_id=excluded.album_id,url=excluded.url,uri=excluded.uri,metadata=excluded.metadata', value.id, value.title, value.duration, value.album.id, value.url, value.uri || `spotify:track:${value.id}`, extra(value, ['id','title','duration','album','albumId','artists','url','uri','duration_formatted','album_uri']));
@@ -71,7 +71,9 @@ export function getCatalog(kind, id) {
   }
   if (kind === 'albums') {
     const value = row('SELECT * FROM catalog_albums WHERE id=?', id);
-    return value && { ...JSON.parse(value.metadata), id, name: value.name, images: JSON.parse(value.images), uri: value.uri, artists: ids('catalog_album_artists','album_id',id), totalTracks: row('SELECT count(*) AS count FROM catalog_tracks WHERE album_id=?',id).count };
+    if (!value) return;
+    const totals = row('SELECT count(*) AS count, COALESCE(sum(duration),0) AS ms FROM catalog_tracks WHERE album_id=?', id);
+    return { ...JSON.parse(value.metadata), id, name: value.name, images: JSON.parse(value.images), uri: value.uri, artists: ids('catalog_album_artists','album_id',id), totalTracks: totals.count, duration: { ms: totals.ms, formatted: `${Math.floor(totals.ms / 60000)}:${String(Math.floor(totals.ms / 1000) % 60).padStart(2,'0')}` } };
   }
   const value = row('SELECT t.*, a.name AS album_name, a.uri AS album_uri FROM catalog_tracks t JOIN catalog_albums a ON a.id=t.album_id WHERE t.id=?',id);
   return value && { ...JSON.parse(value.metadata), id, title: value.title, duration: value.duration, url: value.url, uri: value.uri, artists: ids('catalog_track_artists','track_id',id), album: { id: value.album_id, name: value.album_name, uri: value.album_uri } };
@@ -124,7 +126,7 @@ export function saveCatalog(kind, body, id) {
     const current = id && getCatalog(kind, id);
     if (current && kind === 'artists') current.followers = row('SELECT followers FROM catalog_artists WHERE id=?', id).followers;
     if (id && !current) fail('Registro não encontrado.', 404);
-    const allowed = kind === 'artists' ? ['name','images','followers','genres','biography','country'] : kind === 'albums' ? ['name','images','artists'] : ['title','duration','artists','album','albumId','url'];
+    const allowed = kind === 'artists' ? ['name','images','followers','genres','biography','country'] : kind === 'albums' ? ['name','images','artists','year','genres'] : ['title','duration','artists','album','albumId','url'];
     if (!body || Array.isArray(body) || Object.keys(body).some(key => !allowed.includes(key))) fail('Campos de catálogo inválidos.');
     const value = { ...(current || { id: randomUUID(), createdAt: new Date().toISOString() }), ...body };
     const name = kind === 'tracks' ? 'title' : 'name';
@@ -132,14 +134,9 @@ export function saveCatalog(kind, body, id) {
     value[name] = value[name].trim();
     if (kind !== 'tracks') {
       value.images ??= [];
-      if (!Array.isArray(value.images) || !value.images.every(image => image && (validUrl(image.url) || (kind === 'artists' && typeof image.url === 'string' && image.url.startsWith('/api/v1/images/'))))) fail('Imagens inválidas.');
+      if (!Array.isArray(value.images) || !value.images.every(image => image && (validUrl(image.url) || (typeof image.url === 'string' && image.url.startsWith('/api/v1/images/'))))) fail('Imagens inválidas.');
     }
-    if (kind === 'artists') {
-      value.biography ??= ''; value.country ??= '';
-      for (const [field, max] of [['biography', 5000], ['country', 100]]) {
-        if (typeof value[field] !== 'string' || value[field].trim().length > max || body[field] === null) fail('Biografia ou país inválido.');
-        value[field] = value[field].trim();
-      }
+    if (kind !== 'tracks') {
       if (value.images.length > 10 || !value.images.every(image => {
         if (!image || Array.isArray(image) || Object.keys(image).some(key => !['url','width','height'].includes(key)) || typeof image.url !== 'string' || image.url.length > 2048) return false;
         const local = /^\/api\/v1\/images\/[a-zA-Z0-9_-]+\.(svg|png|jpg|jpeg|webp)$/.test(image.url);
@@ -147,9 +144,21 @@ export function saveCatalog(kind, body, id) {
         try { const url = new URL(image.url); remote = ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; } catch { /* Local URL. */ }
         return (local || remote) && ['width','height'].every(key => image[key] === undefined || (Number.isSafeInteger(image[key]) && image[key] > 0 && image[key] <= 10000));
       })) fail('Fotos inválidas.');
-      value.followers ??= 0; value.genres ??= [];
+      value.genres ??= [];
       if (!Array.isArray(value.genres) || value.genres.length > 20 || !value.genres.every(genre => typeof genre === 'string' && genre.trim() && genre.trim().length <= 80)) fail('Gêneros inválidos.');
       value.genres = [...new Set(value.genres.map(genre => genre.trim()))];
+    }
+    if (kind === 'albums') {
+      value.year ??= null;
+      if (value.year !== null && (!Number.isSafeInteger(value.year) || value.year < 1 || value.year > 9999)) fail('Ano inválido.');
+    }
+    if (kind === 'artists') {
+      value.biography ??= ''; value.country ??= '';
+      for (const [field, max] of [['biography', 5000], ['country', 100]]) {
+        if (typeof value[field] !== 'string' || value[field].trim().length > max || body[field] === null) fail('Biografia ou país inválido.');
+        value[field] = value[field].trim();
+      }
+      value.followers ??= 0; value.genres ??= [];
       if (!Number.isSafeInteger(value.followers) || value.followers < 0) fail('Seguidores inválidos.');
     } else {
       value.artists ??= [];
