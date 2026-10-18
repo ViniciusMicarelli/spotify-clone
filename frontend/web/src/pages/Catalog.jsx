@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { api, useAuth } from '../context/AuthContext';
-import FollowButton from '../components/FollowButton';
+import ArtistDetails from '../components/ArtistDetails';
+import ArtistImage from '../components/ArtistImage';
 import TrackList from '../components/TrackList';
 import Pagination from '../components/Pagination';
 import usePage from '../hooks/usePage';
@@ -36,8 +37,8 @@ export default function Catalog({ kind, search = false }) {
     {search && <p className="muted">{kind === 'artists' ? 'Artistas por nome' : kind === 'albums' ? 'Álbuns por nome' : 'Músicas por título, artista ou álbum'}</p>}
     {kind === 'playlists' && !user && <p>Playlists públicas. <Link to="/auth/login">Entre para acessar sua biblioteca.</Link></p>}
     {error ? <p role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Tentar novamente</button></p> : !result ? <p role="status">Carregando catálogo…</p> : <>
-      {kind === 'artists' && id && <FollowButton key={id} artist={result.detail} />}
-      {isTracks ? <TrackList tracks={result.items} onPlay={play} offset={singleTrack ? 0 : paging.offset} /> : <div className="cards">{result.items.map(item => <Link className="card" key={item.id} to={`/${kind === 'playlists' ? 'playlist' : kind === 'artists' ? 'artist' : 'album'}/${item.id}`}><div className="cover">♫</div><h2>{item.name}</h2><p className="muted">{kind === 'artists' ? `${item.followers} seguidores${item.genres?.length ? ` · ${item.genres.join(', ')}` : ''}` : kind === 'albums' ? `${item.totalTracks} faixas` : item.description || 'Playlist'}</p></Link>)}{!result.items.length && <p>Nenhum resultado.</p>}</div>}
+      {kind === 'artists' && id && <ArtistDetails key={id} artist={result.detail} />}
+      {isTracks ? <TrackList tracks={result.items} onPlay={play} offset={singleTrack ? 0 : paging.offset} /> : <div className="cards">{result.items.map(item => <Link className="card" key={item.id} to={`/${kind === 'playlists' ? 'playlist' : kind === 'artists' ? 'artist' : 'album'}/${item.id}`}>{kind === 'artists' ? <ArtistImage artist={item} /> : <div className="cover">♫</div>}<h2>{item.name}</h2><p className="muted">{kind === 'artists' ? `${item.followers} seguidores${item.genres?.length ? ` · ${item.genres.join(', ')}` : ''}` : kind === 'albums' ? `${item.totalTracks} faixas` : item.description || 'Playlist'}</p></Link>)}{!result.items.length && <p>Nenhum resultado.</p>}</div>}
       {!singleTrack && <Pagination page={paging.page} size={paging.size} total={result.total} onPage={paging.setPage} onSize={paging.setSize} />}
       {isTracks && result.total > paging.size && <p className="muted">Ao ouvir, a fila usa as faixas desta página.</p>}
     </>}

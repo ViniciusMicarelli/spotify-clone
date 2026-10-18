@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 28 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 29 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -176,4 +176,17 @@ Validação: 28 testes backend + 17 frontend e build aprovados. Dois testes unit
 
 REA `ev_951bad6f2d13c33707371c0f52a67cd1d417c9aefb126cfd44db51b525283366`: cenário completo confirmou página 2 de artistas, troca para álbuns reiniciando na primeira página, busca de Digital Dreams mantendo álbuns, abertura do álbum e busca/abertura de Artist 1. Respostas de artistas/álbuns retornaram 200, sem erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: completar metadados de artistas com biografia, país e foto, com validação na API e exibição nos detalhes. OAuth e colaboração permanecem pendentes; a busca avançada do plano maior ainda está parcial.
+Etapa seguinte concluída abaixo: metadados de artistas com biografia, país e foto. OAuth e colaboração permanecem pendentes; a busca avançada do plano maior ainda está parcial.
+
+
+## Metadados de artistas — 18/10/2026
+
+A API administrativa aceita biography/country opcionais (5.000/100 caracteres), com trim, limpeza por string vazia e rejeição de null/tipos inválidos. Gêneros são aparados/deduplicados, limitados a 20 entradas de 80 caracteres. Fotos aceitam até dez objetos URL/dimensões, HTTP(S) sem credenciais ou arquivos diretos em `/api/v1/images`, com limites documentados no backend. Escritas inválidas não alteram nenhum outro campo. Biografia/país usam metadata JSON já existente; não há reconstrução da base nem alteração dos snapshots legados.
+
+Os detalhes mostram retrato, biografia como texto literal com quebras de linha, país, gêneros e seguidores. Busca e artistas seguidos também mostram foto. Ausência/falha da foto usa símbolo com nome acessível; dados não informados têm texto explícito. URLs locais respeitam a origem da API configurada. O SVG local de demonstração é um avatar genérico criado no projeto, sem pessoa real. Não há upload ou editor administrativo na interface; a edição continua via API. País é texto livre, sem catálogo ISO. Os registros reais existentes não foram enriquecidos com dados inventados.
+
+Validação: 29 testes backend + 17 frontend e build aprovados. Novo teste de integração cobre limites/tipos, rollback, normalização, fotos locais/remotas, persistência em outro processo, leitura pública e escrita negada a visitante/usuário comum. O roteiro `frontend/web/tests/browser/artist-details.mjs` passou no Chromium com fixture ARTIST_FIXTURE=1: retrato decodificado, texto HTML literal, recarga, foto na busca, fotos ausentes/quebradas e viewport de 390px sem transbordamento. Zero erros de página; o 404 da foto quebrada é deliberado.
+
+REA `ev_d833555cbef220f0daccfdad89265338cbdb579eea7f9b3f11ad05613c1b4d79`: cenário completo confirma foto na busca, abertura do artista, biografia/país/gêneros, restauração após recarregar e alternativa após foto 404. Foto local retornou 200/304; nenhum erro de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: completar metadados de álbuns com ano, gêneros, capa e duração derivada das faixas. OAuth e colaboração permanecem pendentes.

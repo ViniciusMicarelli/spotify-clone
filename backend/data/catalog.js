@@ -124,7 +124,7 @@ export function saveCatalog(kind, body, id) {
     const current = id && getCatalog(kind, id);
     if (current && kind === 'artists') current.followers = row('SELECT followers FROM catalog_artists WHERE id=?', id).followers;
     if (id && !current) fail('Registro não encontrado.', 404);
-    const allowed = kind === 'artists' ? ['name','images','followers','genres'] : kind === 'albums' ? ['name','images','artists'] : ['title','duration','artists','album','albumId','url'];
+    const allowed = kind === 'artists' ? ['name','images','followers','genres','biography','country'] : kind === 'albums' ? ['name','images','artists'] : ['title','duration','artists','album','albumId','url'];
     if (!body || Array.isArray(body) || Object.keys(body).some(key => !allowed.includes(key))) fail('Campos de catálogo inválidos.');
     const value = { ...(current || { id: randomUUID(), createdAt: new Date().toISOString() }), ...body };
     const name = kind === 'tracks' ? 'title' : 'name';
@@ -132,11 +132,25 @@ export function saveCatalog(kind, body, id) {
     value[name] = value[name].trim();
     if (kind !== 'tracks') {
       value.images ??= [];
-      if (!Array.isArray(value.images) || !value.images.every(image => image && validUrl(image.url))) fail('Imagens inválidas.');
+      if (!Array.isArray(value.images) || !value.images.every(image => image && (validUrl(image.url) || (kind === 'artists' && typeof image.url === 'string' && image.url.startsWith('/api/v1/images/'))))) fail('Imagens inválidas.');
     }
     if (kind === 'artists') {
+      value.biography ??= ''; value.country ??= '';
+      for (const [field, max] of [['biography', 5000], ['country', 100]]) {
+        if (typeof value[field] !== 'string' || value[field].trim().length > max || body[field] === null) fail('Biografia ou país inválido.');
+        value[field] = value[field].trim();
+      }
+      if (value.images.length > 10 || !value.images.every(image => {
+        if (!image || Array.isArray(image) || Object.keys(image).some(key => !['url','width','height'].includes(key)) || typeof image.url !== 'string' || image.url.length > 2048) return false;
+        const local = /^\/api\/v1\/images\/[a-zA-Z0-9_-]+\.(svg|png|jpg|jpeg|webp)$/.test(image.url);
+        let remote = false;
+        try { const url = new URL(image.url); remote = ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; } catch { /* Local URL. */ }
+        return (local || remote) && ['width','height'].every(key => image[key] === undefined || (Number.isSafeInteger(image[key]) && image[key] > 0 && image[key] <= 10000));
+      })) fail('Fotos inválidas.');
       value.followers ??= 0; value.genres ??= [];
-      if (!Number.isSafeInteger(value.followers) || value.followers < 0 || !Array.isArray(value.genres) || !value.genres.every(genre => typeof genre === 'string' && genre.trim())) fail('Seguidores ou gêneros inválidos.');
+      if (!Array.isArray(value.genres) || value.genres.length > 20 || !value.genres.every(genre => typeof genre === 'string' && genre.trim() && genre.trim().length <= 80)) fail('Gêneros inválidos.');
+      value.genres = [...new Set(value.genres.map(genre => genre.trim()))];
+      if (!Number.isSafeInteger(value.followers) || value.followers < 0) fail('Seguidores inválidos.');
     } else {
       value.artists ??= [];
       if (!Array.isArray(value.artists) || new Set(value.artists).size !== value.artists.length || !value.artists.every(artist => typeof artist === 'string' && getCatalog('artists', artist))) fail('Informe IDs únicos de artistas existentes.');

@@ -16,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Route for auth service
 app.use('/api/v1/auth', auth);
+app.use('/api/v1/images', express.static(fileURLToPath(new URL('../public/images/', import.meta.url)), { fallthrough: false }));
 app.use('/api/v1/audio', express.static(fileURLToPath(new URL('../public/audio/', import.meta.url)), { fallthrough: false }));
 
 // Routes for data services

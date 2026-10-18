@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, useAuth } from '../context/AuthContext';
 import Catalog from './Catalog';
+import ArtistImage from '../components/ArtistImage';
 import Pagination from '../components/Pagination';
 
 export default function Library() {
@@ -29,7 +30,7 @@ export default function Library() {
     {user && <p><Link to="/history">Ver histórico de escuta</Link></p>}
     {user && <section aria-label="Artistas seguidos"><h2>Artistas seguidos</h2>
       {error ? <p role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Tentar novamente</button></p> : !result || result.generation !== generation ? <p role="status">Carregando artistas…</p> : <>
-        <div className="cards">{result.data.map(artist => <Link className="card" key={artist.id} to={`/artist/${artist.id}`}><div className="cover">♫</div><h3>{artist.name}</h3></Link>)}</div>
+        <div className="cards">{result.data.map(artist => <Link className="card" key={artist.id} to={`/artist/${artist.id}`}><ArtistImage artist={artist} /><h3>{artist.name}</h3></Link>)}</div>
         {!result.data.length && <p>Você ainda não segue artistas. Abra uma música e visite seu artista para começar.</p>}
         <Pagination page={page} size={size} total={result.pagination.total} onPage={setPage} onSize={value => { setSize(value); setPage(1); }} />
       </>}

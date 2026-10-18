@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 28 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 17 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
+Os 29 testes do backend usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 17 testes do frontend verificam fila, shuffle, repetição, remoção de faixas, paginação, tempo efetivamente ouvido, reordenação e construção das URLs de busca.
 
 ## Configuração e limites
 
@@ -71,3 +71,7 @@ O teste de navegador `frontend/web/tests/browser/playlist-drag.mjs` usa o build 
 A busca permite escolher Músicas, Artistas ou Álbuns. Faixas aceitam título, artista e álbum; artistas e álbuns são buscados pelo próprio nome. O parâmetro `type=artists` ou `type=albums` guarda a escolha na URL; sem `type` a busca continua mostrando músicas. Trocar o tipo ou enviar outro termo reinicia a primeira página e preserva o tamanho escolhido (10/20/50). O campo acompanha o termo da URL, inclusive ao voltar no navegador. Cards abrem os detalhes, e consultas que falham têm botão de nova tentativa.
 
 `frontend/web/tests/browser/search.mjs` valida a busca no Chromium com 25 artistas/álbuns temporários, sem alterar dados locais. Usa as mesmas variáveis `PLAYWRIGHT_MODULE` e `BROWSER_EXECUTABLE` do teste de arraste e também deve ser executado da raiz após o build. A fixture só acrescenta esses registros quando `SEARCH_FIXTURE=1`.
+
+Artistas exibem biografia, país, gêneros e retrato nos detalhes; a foto também aparece na busca e na biblioteca. Dados ausentes têm indicação explícita, e imagens que falham usam um símbolo de música. Metadados são editados pela API administrativa: `biography` (até 5.000 caracteres), `country` (texto de até 100), `genres` e `images`. Artistas existentes não recebem biografias ou países inventados. Não há upload de fotos nem editor administrativo na interface.
+
+O teste `frontend/web/tests/browser/artist-details.mjs` usa as mesmas variáveis de Chromium/Playwright dos demais roteiros. Cria uma fixture com `ARTIST_FIXTURE=1`, verifica detalhes, recarga, foto na busca, imagens ausentes/quebradas e viewport móvel. O retrato local de demonstração é um SVG genérico feito no projeto; não representa uma pessoa real.

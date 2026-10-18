@@ -158,3 +158,36 @@ test('SQL catalog pages preserve literal Unicode search, relation filters, order
     }
   }
 });
+
+test('artist biography, country, photos and genres validate atomically and persist across processes', async () => {
+  const artist = await create('artists', { name: 'Metadata Artist', biography: '  Linha um.\nLinha dois <b>literal</b>.  ', country: ' Brasil ', genres: [' Jazz ', 'Jazz', 'Instrumental'], images: [{ url: '/api/v1/images/artist-demo.svg', width: 320, height: 320 }] });
+  assert.equal(artist.biography, 'Linha um.\nLinha dois <b>literal</b>.');
+  assert.equal(artist.country, 'Brasil');
+  assert.deepEqual(artist.genres, ['Jazz', 'Instrumental']);
+  const before = getCatalog('artists', artist.id);
+  for (const fields of [
+    { biography: null }, { biography: 3 }, { biography: 'x'.repeat(5001) },
+    { country: {} }, { country: null }, { country: 'x'.repeat(101) },
+    { genres: ['x'.repeat(81)] }, { genres: Array(21).fill('Jazz') }, { genres: {} },
+    { images: [{ url: 'javascript:alert(1)' }] }, { images: [{ url: 'https://user:secret@example.com/a.jpg' }] },
+    { images: [{ url: '/api/v1/images/../audio/demo-1.wav' }] },
+    { images: [{ url: '/api/v1/images/artist-demo.svg', width: -1 }] },
+    { images: [{ url: 'https://example.com/a.jpg', height: 1.5 }] },
+    { images: Array(11).fill({ url: 'https://example.com/a.jpg' }) }
+  ]) {
+    assert.equal((await request('/artists/' + artist.id, 'PUT', { name: 'Should not persist', ...fields })).status, 400);
+    assert.deepEqual(getCatalog('artists', artist.id), before);
+  }
+  assert.equal((await request('/artists/' + artist.id, 'PUT', { images: [{ url: 'https://example.com/a.jpg' }] })).status, 200);
+  const module = new URL('../data/catalog.js', import.meta.url).href;
+  const persisted = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `const {getCatalog}=await import(${JSON.stringify(module)}); console.log(JSON.stringify(getCatalog('artists',${JSON.stringify(artist.id)})));`], { encoding: 'utf8', env: process.env }));
+  assert.equal(persisted.biography, before.biography);
+  assert.equal(persisted.country, 'Brasil');
+  assert.equal((await fetch(base + '/artists/' + artist.id)).status, 200);
+  assert.equal((await fetch(base + '/artists/' + artist.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ biography: 'Unauthorized' }) })).status, 401);
+  const signup = await request('/auth/signup', 'POST', { username: 'metadata_viewer', email: 'metadata@example.com', password: 'password123' });
+  assert.equal((await fetch(base + '/artists/' + artist.id, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + signup.data.token }, body: JSON.stringify({ biography: 'Forbidden' }) })).status, 403);
+  const cleared = await request('/artists/' + artist.id, 'PUT', { biography: '', country: '', genres: [], images: [] });
+  assert.equal(cleared.data.data.biography, ''); assert.equal(cleared.data.data.country, '');
+  assert.deepEqual(cleared.data.data.images, []);
+});

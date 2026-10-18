@@ -9,7 +9,7 @@
 - REA validou no Chromium: login demo, catálogo, criação de playlist e busca; nenhum erro de página registrado. Evidência e limites em `docs/estado-atual.md`.
 - Player usa HTMLAudioElement com três áudios instrumentais locais gerados para demonstração (8, 10 e 12 segundos). REA confirmou reprodução com progresso, pausa/retomada, busca, volume, próxima/anterior, fim natural, encerramento da fila e recuperação de erro.
 - Perfis e autenticação usam o mesmo armazenamento. Perfis e mutações de playlists são restritos ao proprietário; playlists privadas ficam ocultas de outras contas. Catálogo exige administrador para mutações.
-- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 28 testes do backend e 17 testes do frontend (fila/paginação/escuta/reordenação/busca) aprovados, incluindo persistência em novo processo.
+- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 29 testes do backend e 17 testes do frontend (fila/paginação/escuta/reordenação/busca) aprovados, incluindo persistência em novo processo.
 - REA confirmou edição de playlist e reabertura em nova sessão; evidências em `docs/estado-atual.md`.
 - Reordenação por botões subir/descer implementada; a API valida que a lista contém exatamente as faixas atuais. Favoritos privados por conta disponíveis no catálogo, detalhes, player e página Músicas curtidas.
 - Testes confirmam que ordem e curtidas persistem em novo processo. REA confirmou reordenação e o fluxo curtir → Músicas curtidas → descurtir em cenários separados.
@@ -22,6 +22,7 @@
 - Histórico privado de escuta implementado após três segundos efetivamente reproduzidos, com paginação, limpeza e persistência por conta. REA confirmou registro, restauração e limpeza.
 - Arrastar e soltar na página atual da playlist implementado para o proprietário; botões Subir/Descer preservados para teclado e mudança entre páginas. Teste de navegador confirmou arraste, persistência, falha e permissões.
 - Busca permite alternar músicas, artistas e álbuns, com tipo/termo/paginação na URL e links para detalhes. Chromium e REA confirmaram paginação e navegação.
+- Artistas têm biografia, país, gêneros e retrato nos detalhes; fotos aparecem na busca e biblioteca. API valida limites e URLs, com escrita restrita a administradores e alternativa para imagens indisponíveis.
 - OAuth e colaboração continuam pendentes.
 - Página Meu perfil implementada: edição de nome/foto, atualização no cabeçalho e nos donos das playlists, persistência após recarregar. REA confirmou o fluxo.
 - Migração, rollback, savepoints e concorrência entre processos validados em testes isolados. Dados locais migrados com igualdade das sete coleções antes da edição do perfil.
@@ -203,7 +204,7 @@ spotify-clone/
 
 - **Artistas**
   - [x] CRUD de artistas
-  - [ ] Metadados (foto, biografia, país, categorias)
+  - [x] Metadados (foto, biografia, país, categorias)
   - [x] Relação com faixas e álbuns
 
 - **Álbuns**

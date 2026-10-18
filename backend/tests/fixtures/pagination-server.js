@@ -9,6 +9,11 @@ const { default: api } = await import('../../api-gateway/index.js');
 const { database, PersistentMap, transaction } = await import('../../data/store.js');
 const { saveCatalog, catalogValues } = await import('../../data/catalog.js');
 transaction(() => {
+  if (process.env.ARTIST_FIXTURE === '1') {
+    saveCatalog('artists', { biography: 'Artista fictício de demonstração.\nTexto <b>literal</b>, sem HTML.', country: 'Brasil', images: [{ url: '/api/v1/images/artist-demo.svg', width: 320, height: 320 }] }, '1');
+    saveCatalog('artists', { images: [{ url: '/api/v1/images/missing.png' }] }, '2');
+    saveCatalog('artists', { images: [] }, '3');
+  }
   if (process.env.SEARCH_FIXTURE === '1') {
     for (let i = 1; i <= 25; i++) {
       const name = `Busca exemplo ${String(i).padStart(2, '0')}`;

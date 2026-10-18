@@ -63,7 +63,7 @@ Leituras mantêm o formato da API anterior, com artistas por ID e álbum expandi
 
 Mutações exigem administrador e usam UUIDs:
 
-- Artistas: `name` obrigatório; opcionais `images`, `genres` e `followers` (inteiro não negativo).
+- Artistas: `name` obrigatório; opcionais `images`, `genres`, `followers` (inteiro não negativo), `biography` e `country`.
 - Álbuns: `name` obrigatório; opcionais `images` e `artists` (IDs únicos existentes).
 - Faixas: `title`, `duration` em milissegundos positivos, `url` HTTP(S) ou `/api/v1/audio/...`, `albumId` existente e `artists` (lista de IDs). Também aceita `album: { id }` por compatibilidade.
 - PUT aceita atualização parcial. O vínculo de faixa/álbum é alterado na faixa; o antigo campo `tracks` de escrita de álbum é rejeitado para evitar duas fontes de verdade.
@@ -96,3 +96,8 @@ Histórico de escuta (autenticado):
 - `DELETE /api/v1/me/history`: limpa apenas o histórico da conta autenticada, de forma idempotente.
 
 A tabela `listening_history` usa FKs com exclusão em cascata para faixas/contas, índice por conta/sequência e paginação SQL em snapshot de leitura. Repetições reais da mesma faixa podem aparecer como registros distintos. O player envia após três segundos efetivamente tocados; a API recebe eventos declarados pelo cliente e não comprova escuta no servidor. Não há retenção automática, sincronização em tempo real ou envio offline. Uma nova reprodução em andamento pode gerar registro depois de uma limpeza.
+
+
+Metadados de artistas: `biography` aceita texto de até 5.000 caracteres, preservando quebras de linha; `country` aceita texto livre de até 100 caracteres (não é validação de código ISO). Ambos removem espaços nas pontas, são opcionais e podem ser apagados com string vazia; `null` é inválido. Permanecem no JSON metadata do SQLite e dispensam migração destrutiva. O gênero é a categoria: até 20 entradas de até 80 caracteres, aparadas e deduplicadas.
+
+Fotos de artistas: até 10 objetos `{ url, width?, height? }`. URL tem até 2.048 caracteres, aceita HTTP/HTTPS sem credenciais ou `/api/v1/images/<arquivo>.(svg|png|jpg|jpeg|webp)` sem subdiretórios. Dimensões opcionais são inteiros entre 1 e 10.000. Outros campos/protocolos são rejeitados. `images: []` remove fotos. `/api/v1/images` serve os arquivos locais em `backend/public/images`; não é rota de upload. Validação e gravação são transacionais; permissões administrativas não mudaram.
