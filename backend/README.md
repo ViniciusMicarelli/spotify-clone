@@ -30,7 +30,7 @@ Entrada única: `api-gateway/index.js`, porta 3000 por padrão. Não é necessá
 
 Mutações de playlists exigem o token do proprietário. Playlists privadas são visíveis apenas a ele; as públicas podem ser lidas sem token. GET de playlists aceita `userId`, `search`, `limit` (1–100) e `offset`. Faixas repetidas são deduplicadas, faixas inexistentes são rejeitadas e a duração é recalculada. Perfis usam o cadastro da autenticação e não expõem senhas. POST de usuários é feito por `/auth/signup`.
 
-Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, preservando a ordem em que foram curtidos. Os IDs de usuário enviados pelo cliente não selecionam outra conta. As antigas rotas de follow/liked em `/playlists` não são aliases das novas rotas de favoritos; follow continua pendente. Validação abrangente dos descritores legados de catálogo continua pendente.
+Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, preservando a ordem em que foram curtidos. Os IDs de usuário enviados pelo cliente não selecionam outra conta. As antigas rotas de follow/liked em `/playlists` não são aliases das novas rotas de favoritos; follow continua pendente. O catálogo agora usa rotas próprias com validação e relações normalizadas.
 
 `JWT_SECRET` é obrigatório em produção. Em desenvolvimento, uma chave é gerada e salva no diretório de dados. OAuth continua pendente.
 
@@ -38,7 +38,7 @@ Favoritos são privados e retornam `{ "trackIds": [...], "data": [...] }`, prese
 
 A primeira inicialização importa users/settings/tracks/albums/artists/playlists/favorites dos JSONs existentes em uma única transação. A marca de migração é gravada somente no sucesso. Arquivos inválidos ou duplicidades interrompem a inicialização; os originais ficam intactos. Uma coleção vazia importada não recebe seeds na próxima inicialização. Encerre a API antiga antes de migrar; os JSONs não refletem alterações posteriores no SQLite.
 
-Operações read-modify-write de playlists/favoritos usam transações. Alterar perfil também atualiza os donos das playlists na mesma transação; excluir uma conta remove suas playlists e favoritos juntos. O helper de transações exige callbacks síncronos e suporta savepoints. O catálogo legado ainda não está normalizado em tabelas relacionais.
+Operações read-modify-write de playlists/favoritos usam transações. Alterar perfil também atualiza os donos das playlists na mesma transação; excluir uma conta remove suas playlists e favoritos juntos. O helper de transações exige callbacks síncronos e suporta savepoints. O catálogo usa tabelas relacionais próprias; imagens/metadados adicionais e as coleções de contas/playlists/favoritos continuam documentais.
 
 O Compose existente é infraestrutura opcional para trabalho futuro; a API atual não o utiliza.
 
@@ -53,3 +53,21 @@ O cookie `spotify_refresh` usa HttpOnly, SameSite=Strict e Path=/api/v1/auth; Se
 Rotas de autenticação usam Cache-Control: no-store e validam Origin. Em desenvolvimento aceitam loopback; em produção aceitam a própria origem e `FRONTEND_ORIGIN` (lista separada por vírgula). CORS reflete a origem e permite credenciais; as rotas de cookie aplicam a validação de origem antes de qualquer alteração. A implantação deve usar HTTPS e frontend/API no mesmo site para o cookie Strict.
 
 A fixture `node backend/tests/fixtures/session-server.js` serve o build em 127.0.0.1:5175 com SQLite temporário e acesso de dois segundos, atrasando o login para entregar acesso expirado. Ela permite verificar recuperação simultânea de 401 sem alterar dados reais. Encerre o processo ao terminar.
+
+## Catálogo relacional
+
+Na inicialização, uma migração com marcador `catalog_version=1` cria artistas, álbuns, faixas, gêneros e relações artista/álbum e artista/faixa. A migração é atômica e preserva as coleções originais de `records` como snapshot; depois dela, essas cópias não são o catálogo ativo. Referências inválidas interrompem a inicialização e revertem a migração; os dados de origem devem ser corrigidos antes de repetir. Faça backup consistente do banco antes de atualizar. Na sessão de implementação foi usada uma cópia SQLite via VACUUM INTO, preservada em `.data/backups/`.
+
+Leituras mantêm o formato da API anterior, com artistas por ID e álbum expandido nas faixas. Faixas também retornam `artistDetails` (ID/nome). `totalTracks` e os nomes de álbuns nas faixas são calculados a partir das relações atuais.
+
+Mutações exigem administrador e usam UUIDs:
+
+- Artistas: `name` obrigatório; opcionais `images`, `genres` e `followers` (inteiro não negativo).
+- Álbuns: `name` obrigatório; opcionais `images` e `artists` (IDs únicos existentes).
+- Faixas: `title`, `duration` em milissegundos positivos, `url` HTTP(S) ou `/api/v1/audio/...`, `albumId` existente e `artists` (lista de IDs). Também aceita `album: { id }` por compatibilidade.
+- PUT aceita atualização parcial. O vínculo de faixa/álbum é alterado na faixa; o antigo campo `tracks` de escrita de álbum é rejeitado para evitar duas fontes de verdade.
+- GET de listas aceita `limit` de 1 a 100, `offset` inteiro não negativo e `search`. Faixas aceitam `artistId` e `albumId`; álbuns, `artistId`; artistas, `genre`.
+- Busca de faixas considera título, nome dos artistas e nome do álbum. `totalTracks` muda automaticamente ao criar, mover ou remover faixas.
+- Excluir álbum com faixas ou artista com vínculos retorna 409. Primeiro mova/remova as faixas e vínculos. Excluir faixa limpa playlists/favoritos e recalcula durações na mesma transação; falha em qualquer etapa faz rollback completo.
+
+Não há tela de administração ou cadastro de administrador pela interface. Os testes usam uma conta administrativa em banco temporário.

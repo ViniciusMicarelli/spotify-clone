@@ -1,10 +1,10 @@
-# Estado verificado — 17/10/2026
+# Estado verificado — 18/10/2026
 
 ## Resultado desta etapa
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 18 testes do backend (14 de API/sessões e quatro de armazenamento) e oito testes da fila passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 22 testes do backend (17 de API/sessões e cinco de armazenamento/migração) e oito testes da fila passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -77,4 +77,16 @@ As primeiras tentativas `ev_5ec1eaae6de273ced6e8c68777c54c65361b4a16bcf101ac203b
 
 Sessões antigas sem `sid` exigem novo login. OAuth permanece pendente. Cookies Strict exigem frontend/API no mesmo site; produção requer HTTPS e configuração da origem autorizada.
 
-Próxima etapa sugerida: normalização do catálogo e revisão dos componentes antigos. OAuth, refresh tokens e revisão dos componentes antigos continuam pendentes. Rotas antigas de follow/liked não foram portadas para o novo router.
+## Normalização do catálogo
+
+Artistas, gêneros, álbuns, faixas e relações agora usam tabelas próprias, chaves estrangeiras e índices. Imagens e metadados adicionais permanecem em JSON. A migração com `catalog_version=1` é transacional, preserva as coleções antigas como snapshot e não é repetida em reinicializações. Faixas retornam nomes atuais de álbum e artistas, e álbuns calculam totalTracks a partir das relações.
+
+Quatro testes adicionais cobrem: CRUD e movimentação de faixas com contagens derivadas; referências, URLs e paginação inválidas; exclusão de faixa com limpeza de playlists/favoritos e rollback induzido; migração única com snapshot preservado e rollback de referências inválidas. A restrição real de FK também é exercitada por SQL direto no teste isolado.
+
+Antes da migração local foi criado backup consistente em `.data/backups/before-catalog-1792334133226.sqlite` (não versionado). Após a inicialização: 3 artistas, 3 álbuns e 3 faixas; PRAGMA integrity_check = ok, zero violações de FK.
+
+REA `ev_f40c4a7b645cc1d0ba770cd6ea3d0c533e4c5e5ac4f141d3576efb6efa6231e6`: catálogo, busca por Artist 1, abertura do artista, navegação para o álbum e reprodução da faixa com progresso. Cenário completo no aplicativo local em 127.0.0.1:5174, sem erros de página.
+
+Os descritores antigos foram substituídos por routers validados. Álbum com faixas ou artista ainda referenciado retorna 409 na exclusão. A exclusão de faixa atualiza playlists, favoritos e durações na mesma transação. Contas, sessões, playlists e favoritos permanecem documentais; não há painel de administração.
+
+Próxima etapa sugerida: remover os componentes antigos fora do fluxo, consolidar os componentes de listagem e melhorar a paginação da interface. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.

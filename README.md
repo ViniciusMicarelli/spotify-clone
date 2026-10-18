@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 18 testes do backend (14 de API/sessão e quatro de armazenamento) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. Oito testes do frontend verificam a fila, shuffle, repetição e remoção de faixas.
+Os 22 testes do backend (17 de API/sessão e cinco de armazenamento/migração) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. Oito testes do frontend verificam a fila, shuffle, repetição e remoção de faixas.
 
 ## Configuração e limites
 
@@ -42,7 +42,8 @@ Os 18 testes do backend (14 de API/sessão e quatro de armazenamento) usam diret
 - Frontend: `VITE_API_URL`, caso necessário, deve incluir `/api/v1`, por exemplo `http://localhost:3000/api/v1`.
 - Dados e contas são salvos em SQLite (`backend/.data/spotify.sqlite`, ignorado pelo Git). `DATA_DIR` permite outro diretório. O banco usa WAL e transações; Redis e PostgreSQL não são necessários.
 - Na primeira inicialização, os JSONs existentes são importados juntos, uma única vez. Arquivos inválidos interrompem a migração com rollback. Encerre a versão antiga da API antes de migrar. Os JSONs permanecem intactos como snapshot anterior e deixam de receber alterações.
-- O SQLite preserva o formato documental dos registros; cadastro, perfis, playlists e favoritos têm transações e restrições de unicidade para usuário/email. Normalização completa do catálogo continua pendente.
+- Artistas, álbuns, faixas, gêneros e relações do catálogo usam tabelas próprias e chaves estrangeiras. Imagens e metadados adicionais continuam em JSON; contas, sessões, playlists e favoritos mantêm o armazenamento documental transacional.
+- A migração do catálogo é única e mantém os registros antigos como snapshot. Álbum com faixas e artista referenciado não podem ser excluídos (409). Excluir uma faixa a remove das playlists e curtidas na mesma transação, atualizando as durações. Renomear um álbum se reflete nas faixas; a busca aceita título, artista e álbum.
 - O player usa três áudios instrumentais originais de demonstração, com 8, 10 e 12 segundos, servidos pela própria API. Os arquivos estão em `backend/public/audio/`; `python3 scripts/generate-demo-audio.py` os regenera.
 - A fila preserva a ordem selecionada, continua ao navegar, avança ao término e, com repetição desligada, para na última faixa. Selecionar a mesma faixa reinicia o áudio. “Anterior” reinicia a faixa após 3 segundos; antes disso, volta à anterior. Play/pause, busca na faixa e volume foram validados no navegador.
 - Playlists podem ser renomeadas, tornadas privadas, excluídas e ter faixas adicionadas/removidas e reordenadas pelo proprietário. A biblioteca autenticada mostra as playlists da própria conta.
