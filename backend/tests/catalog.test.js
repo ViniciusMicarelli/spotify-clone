@@ -125,3 +125,36 @@ test('playlist track pages retain explicit order beyond 100 tracks and protect p
   const signup = await request('/auth/signup','POST',{ username:'page_viewer',email:'pages@example.com',password:'password123' });
   assert.equal((await fetch(base+path,{ headers:{ Authorization:'Bearer '+signup.data.token } })).status, 404);
 });
+
+
+test('SQL catalog pages preserve literal Unicode search, relation filters, order and totals', async () => {
+  const { saveCatalog, catalogValues, trackDetails } = await import('../data/catalog.js');
+  const artist = saveCatalog('artists', { name: 'ÁRVORE %_ Símbolo', genres: ['Ação'] });
+  const album = saveCatalog('albums', { name: 'ÁLBUM Especial', artists: [artist.id, '1'] });
+  saveCatalog('tracks', { title: 'Título %_ literal', duration: 8000, artists: [artist.id, '1'], albumId: album.id, url: '/api/v1/audio/demo-1.wav' });
+  saveCatalog('tracks', { title: 'Outra faixa', duration: 8000, artists: [], albumId: album.id, url: '/api/v1/audio/demo-1.wav' });
+  for (const kind of ['artists', 'albums', 'tracks']) {
+    const all = catalogValues(kind);
+    for (const filters of [
+      {}, { search: 'árvore' }, { search: '%_' }, { search: "' OR 1=1 --" },
+      { search: 'símbolo artist 1' }, { search: 'álbum especial' },
+      { artistId: artist.id }, { albumId: album.id }, { genre: 'Ação' },
+      { artistId: artist.id, albumId: album.id, search: 'título' }, { search: '  ' }
+    ]) {
+      const expected = all.filter(value => {
+        const names = kind === 'tracks' ? value.artists.map(id => getCatalog('artists', id).name).join(' ') : '';
+        return `${value.name || value.title} ${names} ${value.album?.name || ''}`.toLowerCase().includes((filters.search || '').toLowerCase())
+          && (!filters.artistId || value.artists?.includes(filters.artistId))
+          && (!filters.albumId || value.album?.id === filters.albumId)
+          && (!filters.genre || value.genres?.includes(filters.genre));
+      });
+      for (const offset of [0, 2, 100, 999]) {
+        const query = new URLSearchParams({ ...filters, limit: '2', offset: String(offset) });
+        const response = await request(`/${kind}?${query}`);
+        assert.equal(response.status, 200);
+        assert.deepEqual(response.data.pagination, { limit: 2, offset, total: expected.length });
+        assert.deepEqual(response.data.data, expected.slice(offset, offset + 2).map(value => kind === 'tracks' ? trackDetails(value) : value));
+      }
+    }
+  }
+});

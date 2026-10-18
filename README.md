@@ -59,5 +59,5 @@ Os 23 testes do backend (18 de API/sessão e cinco de armazenamento/migração) 
 - OAuth, arrastar e soltar e colaboração continuam pendentes. O protótipo destina-se a uso local.
 - Catálogo, busca, biblioteca, detalhes de artista/álbum e faixas de playlists têm paginação de 10, 20 ou 50 itens, com página/quantidade na URL. URLs fora do intervalo são corrigidas após carregar os totais. Uma nova busca começa na primeira página.
 - A fila iniciada por uma lista paginada usa somente as faixas da página atual. Playlists preservam a ordem global e permitem reordenar entre páginas. Adicionar música usa busca paginada, sem o limite anterior de 100 faixas.
-- Favoritos são paginados na interface; o contexto ainda carrega a coleção completa para compartilhar as curtidas entre telas. A API de catálogo ainda filtra os resultados em memória, antes de devolver a página.
+- Favoritos são paginados na interface; o contexto ainda carrega a coleção completa para compartilhar as curtidas entre telas. A API de catálogo aplica filtros, contagem e LIMIT/OFFSET no SQLite e carrega metadados apenas da página. A busca literal por substring pode percorrer o catálogo no banco.
 - Listas usam `TrackList` compartilhado e paginação reutilizável. Os dez arquivos antigos fora do fluxo foram removidos, junto com dependências sem uso. O único ponto de entrada web é `frontend/web/src/main.jsx`.

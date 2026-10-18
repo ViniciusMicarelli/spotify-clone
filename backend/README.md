@@ -76,3 +76,5 @@ Não há tela de administração ou cadastro de administrador pela interface. Os
 A leitura paginada de faixas valida limit (1–100) e offset inteiro seguro não negativo. Retorna `{ data, pagination: { total, limit, offset } }`, respeitando a mesma visibilidade do detalhe: conteúdo privado retorna 404 para outros usuários e visitantes. Não depende de carregar as primeiras 100 faixas do catálogo. O teste de API usa 103 faixas e verifica a página posterior à posição 100.
 
 A fixture `node backend/tests/fixtures/pagination-server.js` serve o build com SQLite temporário, 121 faixas e uma playlist privada da conta demo, em 127.0.0.1:5175. Não altera o banco normal. Encerre o processo ao terminar.
+
+Listagens de artistas, álbuns e faixas aplicam busca, filtros, contagem e LIMIT/OFFSET no SQLite, em um snapshot de leitura. A ordem permanece a de inserção. Busca usa substring literal com conversão Unicode para minúsculas: `%` e `_` não são curingas. Relações usam EXISTS para evitar duplicação; somente os IDs da página recebem metadados completos. A busca por substring ainda pode percorrer registros no banco; não há FTS.

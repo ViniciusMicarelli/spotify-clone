@@ -107,4 +107,15 @@ REA, fixture isolada de produção com 121 faixas em 127.0.0.1:5175:
 
 Os navegadores temporários foram encerrados pela REA. O processo da fixture também foi encerrado ao final.
 
-Próxima etapa sugerida: aplicar filtros e paginação diretamente no SQL, mantendo os contratos atuais. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.
+Etapa seguinte concluída abaixo: filtros e paginação diretamente no SQL. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.
+
+
+## Filtros e paginação SQL — 18/10/2026
+
+Listagens do catálogo agora executam filtros, contagem e LIMIT/OFFSET no SQLite, hidratando somente a página retornada. SAVEPOINT mantém contagem, IDs e metadados no mesmo snapshot de leitura. Parâmetros são vinculados; relações usam EXISTS e preservam a ordem de inserção sem duplicar faixas. A função determinística catalog_lower mantém a conversão Unicode do JavaScript, e instr mantém `%` e `_` literais. Não há FTS: substring ainda pode percorrer registros no banco; a hidratação da página continua usando consultas por item.
+
+Validação: 24 testes backend + 11 frontend e build aprovados. O novo teste compara o contrato anterior com SQL para as três entidades, incluindo acentos, caracteres especiais, texto semelhante a SQL, ordem dos artistas, filtros combinados, totais e offsets além do fim.
+
+REA `ev_5e37d3d07e32d0c788364210b5938cb3e3d869c5e4221222706f3ae09fef49a5`: cenário completo na fixture isolada com 121 faixas; página 2/tamanho 10 mostra Demo extra 008 e a busca por Demo extra 118 reinicia na primeira página com um resultado. Ambas as consultas retornaram 200; zero erros de página. O 401 de refresh é esperado para visitante sem cookie. Navegador e fixture encerrados ao final.
+
+Próxima etapa sugerida: implementar seguir/deixar de seguir artistas com persistência e isolamento por conta. OAuth, colaboração e arrastar/soltar continuam pendentes.

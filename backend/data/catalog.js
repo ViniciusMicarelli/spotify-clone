@@ -68,6 +68,42 @@ export function getCatalog(kind, id) {
 }
 export function trackDetails(track) { return { ...track, artistDetails: track.artists.map(id => ({ id, name: getCatalog('artists',id).name })) }; }
 export function catalogValues(kind) { return rows(`SELECT id FROM catalog_${kind} ORDER BY rowid`).map(value => getCatalog(kind, value.id)); }
+// Match JavaScript's Unicode casing and literal substring semantics in SQL.
+db.function('catalog_lower', { deterministic: true }, value => value.toLowerCase());
+export function listCatalog(kind, { limit, offset, search = '', artistId, albumId, genre }) {
+  if (!kinds.includes(kind)) throw new Error('Tipo de catálogo inválido.');
+  const predicates = [], parameters = [];
+  if (search) {
+    const text = kind === 'tracks'
+      ? `c.title || ' ' || COALESCE((SELECT group_concat(name, ' ') FROM
+          (SELECT a.name FROM catalog_track_artists ca JOIN catalog_artists a ON a.id=ca.artist_id
+           WHERE ca.track_id=c.id ORDER BY ca.position)), '') || ' ' ||
+          (SELECT name FROM catalog_albums WHERE id=c.album_id)`
+      : "c.name || '  '";
+    predicates.push(`instr(catalog_lower(${text}), ?) > 0`);
+    parameters.push(search.toLowerCase());
+  }
+  if (artistId) {
+    predicates.push(kind === 'artists' ? '0' : `EXISTS (SELECT 1 FROM catalog_${kind === 'tracks' ? 'track' : 'album'}_artists ca WHERE ca.${kind === 'tracks' ? 'track' : 'album'}_id=c.id AND ca.artist_id=?)`);
+    if (kind !== 'artists') parameters.push(artistId);
+  }
+  if (albumId) { predicates.push(kind === 'tracks' ? 'c.album_id=?' : '0'); if (kind === 'tracks') parameters.push(albumId); }
+  if (genre) { predicates.push(kind === 'artists' ? 'EXISTS (SELECT 1 FROM catalog_artist_genres cg WHERE cg.artist_id=c.id AND cg.genre=?)' : '0'); if (kind === 'artists') parameters.push(genre); }
+  const from = `FROM catalog_${kind} c${predicates.length ? ' WHERE ' + predicates.join(' AND ') : ''}`;
+  // A read snapshot keeps count, page and metadata consistent across processes.
+  // Only page IDs are hydrated, without loading unrelated records.
+  db.exec('SAVEPOINT catalog_page');
+  try {
+    const total = row(`SELECT count(*) AS total ${from}`, ...parameters).total;
+    const data = rows(`SELECT c.id ${from} ORDER BY c.rowid LIMIT ? OFFSET ?`, ...parameters, limit, offset)
+      .map(({ id }) => { const value = getCatalog(kind, id); return kind === 'tracks' ? trackDetails(value) : value; });
+    db.exec('RELEASE catalog_page');
+    return { data, pagination: { limit, offset, total } };
+  } catch (error) {
+    db.exec('ROLLBACK TO catalog_page; RELEASE catalog_page');
+    throw error;
+  }
+}
 function validUrl(value) {
   if (typeof value !== 'string') return false;
   if (value.startsWith('/api/v1/audio/')) return !value.includes('..');

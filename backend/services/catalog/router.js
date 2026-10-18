@@ -1,19 +1,15 @@
 import express from 'express';
 import authMiddleware from '../../middleware/auth.js';
-import { getCatalog, catalogValues, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
+import { getCatalog, listCatalog, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
+import { parsePagination } from '../../utils/pagination.js';
 const enrich = (kind, value) => kind !== 'tracks' ? value : trackDetails(value);
 function routerFor(kind) {
   const router = express.Router();
   router.get('/', (req,res) => {
-    const { limit = '50', offset = '0', search = '', artistId, albumId, genre } = req.query;
-    const validNumber = value => typeof value === 'string' && /^\d+$/.test(value) && Number.isSafeInteger(Number(value));
-    if (!validNumber(limit) || Number(limit) < 1 || Number(limit) > 100 || !validNumber(offset) || [search, artistId, albumId, genre].some(value => value !== undefined && typeof value !== 'string')) return res.status(400).json({ error: 'Filtros ou paginação inválidos.' });
-    const query = search.toLowerCase();
-    const values = catalogValues(kind).filter(value => {
-      const artistNames = kind === 'tracks' ? value.artists.map(id => getCatalog('artists',id).name).join(' ') : '';
-      return `${value.name || value.title} ${artistNames} ${value.album?.name || ''}`.toLowerCase().includes(query) && (!artistId || value.artists?.includes(artistId)) && (!albumId || value.album?.id === albumId) && (!genre || value.genres?.includes(genre));
-    });
-    res.json({ data: values.slice(Number(offset),Number(offset)+Number(limit)).map(value => enrich(kind,value)), pagination: { limit: Number(limit), offset: Number(offset), total: values.length } });
+    const { search = '', artistId, albumId, genre } = req.query;
+    const pagination = parsePagination(req.query);
+    if (!pagination || [search, artistId, albumId, genre].some(value => value !== undefined && typeof value !== 'string')) return res.status(400).json({ error: 'Filtros ou paginação inválidos.' });
+    res.json(listCatalog(kind, { ...pagination, search, artistId, albumId, genre }));
   });
   router.get('/:id',(req,res) => {
     const value = getCatalog(kind,req.params.id);

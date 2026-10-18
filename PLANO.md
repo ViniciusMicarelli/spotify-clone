@@ -9,7 +9,7 @@
 - REA validou no Chromium: login demo, catálogo, criação de playlist e busca; nenhum erro de página registrado. Evidência e limites em `docs/estado-atual.md`.
 - Player usa HTMLAudioElement com três áudios instrumentais locais gerados para demonstração (8, 10 e 12 segundos). REA confirmou reprodução com progresso, pausa/retomada, busca, volume, próxima/anterior, fim natural, encerramento da fila e recuperação de erro.
 - Perfis e autenticação usam o mesmo armazenamento. Perfis e mutações de playlists são restritos ao proprietário; playlists privadas ficam ocultas de outras contas. Catálogo exige administrador para mutações.
-- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 23 testes do backend e 11 testes do frontend (fila/paginação) aprovados, incluindo persistência em novo processo.
+- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 24 testes do backend e 11 testes do frontend (fila/paginação) aprovados, incluindo persistência em novo processo.
 - REA confirmou edição de playlist e reabertura em nova sessão; evidências em `docs/estado-atual.md`.
 - Reordenação por botões subir/descer implementada; a API valida que a lista contém exatamente as faixas atuais. Favoritos privados por conta disponíveis no catálogo, detalhes, player e página Músicas curtidas.
 - Testes confirmam que ordem e curtidas persistem em novo processo. REA confirmou reordenação e o fluxo curtir → Músicas curtidas → descurtir em cenários separados.
@@ -17,7 +17,8 @@
 - Access token de 15 minutos em memória, refresh rotativo em cookie HttpOnly e sessões revogáveis implementados. REA confirmou renovação compartilhada de dois 401, restauração após recarregar e logout persistente.
 - Catálogo normalizado em tabelas relacionais com FKs, migração transacional e snapshots preservados. CRUD valida metadados/relações; busca aceita nomes de artista e álbum. Exclusão de faixa limpa playlists/curtidas atomicamente; álbum/artista referenciado retorna 409.
 - Componentes antigos fora do fluxo removidos, listas consolidadas e paginação adicionada à interface. Playlists têm leitura paginada das próprias faixas; busca para adicionar músicas não depende das primeiras 100 faixas.
-- OAuth, arrastar e soltar, colaboração e paginação SQL do catálogo continuam pendentes.
+- Filtros, contagem e paginação do catálogo executam no SQL, com busca Unicode literal e leitura consistente da página.
+- OAuth, arrastar e soltar e colaboração continuam pendentes.
 - Página Meu perfil implementada: edição de nome/foto, atualização no cabeçalho e nos donos das playlists, persistência após recarregar. REA confirmou o fluxo.
 - Migração, rollback, savepoints e concorrência entre processos validados em testes isolados. Dados locais migrados com igualdade das sete coleções antes da edição do perfil.
 - Os checklists abaixo representam o escopo completo: um esboço ou implementação parcial não conclui um item.
