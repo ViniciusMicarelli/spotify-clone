@@ -12,6 +12,7 @@ const titles = { tracks: 'Músicas para ouvir agora', artists: 'Artistas', album
 export default function Catalog({ kind, search = false }) {
   const { id, query } = useParams();
   const [searchParams] = useSearchParams();
+  const artistId = search && kind === 'albums' ? searchParams.get('artistId') || '' : '';
   const genre = search && kind === 'artists' ? searchParams.get('genre') || '' : '';
   const { play } = useOutletContext();
   const { user, token } = useAuth();
@@ -24,7 +25,7 @@ export default function Catalog({ kind, search = false }) {
     const controller = new AbortController(); setResult(null); setError('');
     async function load() {
       try {
-        const params = { limit: paging.size, offset: paging.offset, ...(search ? { search: query || '' } : {}), ...(genre ? { genre } : {}), ...(kind === 'playlists' && user ? { userId: user.id } : {}) };
+        const params = { limit: paging.size, offset: paging.offset, ...(search ? { search: query || '' } : {}), ...(genre ? { genre } : {}), ...(artistId ? { artistId } : {}), ...(kind === 'playlists' && user ? { userId: user.id } : {}) };
         const detail = await api.get(`/${kind}${id ? `/${id}` : ''}`, { params: id ? {} : params, signal: controller.signal });
         let data = detail.data;
         if (id && kind !== 'tracks') data = (await api.get('/tracks', { params: { limit: paging.size, offset: paging.offset, ...(kind === 'artists' ? { artistId: id } : { albumId: id }) }, signal: controller.signal })).data;
@@ -35,9 +36,9 @@ export default function Catalog({ kind, search = false }) {
       } catch (error) { if (!controller.signal.aborted) setError(error.response?.data?.error || 'Não foi possível carregar o catálogo. Verifique a conexão e tente novamente.'); }
     }
     load(); return () => controller.abort();
-  }, [kind, id, search, query, user?.id, token, paging.page, paging.size, revision, genre]);
+  }, [kind, id, search, query, user?.id, token, paging.page, paging.size, revision, genre, artistId]);
   const isTracks = kind === 'tracks' || Boolean(id);
-  return <section><p className="eyebrow">SEU ESPAÇO DE MÚSICA</p><h1>{id ? result?.detail.name || result?.detail.title || 'Carregando…' : search ? `Busca${query ? `: ${query}` : ''}` : titles[kind]}</h1>
+  return <section className="catalog"><p className="eyebrow">SEU ESPAÇO DE MÚSICA</p><h1>{id ? result?.detail.name || result?.detail.title || 'Carregando…' : search ? `Busca${query ? `: ${query}` : ''}` : titles[kind]}</h1>
     {search && <p className="muted">{kind === 'artists' ? 'Artistas por nome' : kind === 'albums' ? 'Álbuns por nome' : 'Músicas por título, artista ou álbum'}</p>}
     {kind === 'playlists' && !user && <p>Playlists públicas. <Link to="/auth/login">Entre para acessar sua biblioteca.</Link></p>}
     {error ? <p role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Tentar novamente</button></p> : !result ? <p role="status">Carregando catálogo…</p> : <>

@@ -117,3 +117,6 @@ Respostas de faixa incluem `technical`, derivado e somente de leitura: `{ contai
 
 
 `GET /api/v1/artists/genres` retorna `{ data: ["Electronic", ...] }`, com todos os gêneros distintos dos artistas, ordenados no SQLite. É público e independente da paginação e do termo pesquisado; não inclui gêneros exclusivos de álbuns. `GET /artists?search=...&genre=...&limit=...&offset=...` combina nome e gênero exato (incluindo maiúsculas/minúsculas). Gênero inexistente retorna lista vazia. Cadastro/edição/exclusão do catálogo é refletido na próxima consulta da lista.
+
+
+O filtro existente `GET /api/v1/albums?artistId=<id>&search=<nome>&limit=10&offset=0` é usado pela interface. Ele combina nome do álbum com associação ao artista (EXISTS), preservando ordem e contagem sem duplicar colaborações. Artista desconhecido retorna zero resultados; parâmetros artistId repetidos são inválidos. O seletor da interface usa a listagem paginada de `/artists` e detalhes do artista selecionado; não exige nova rota ou mudanças no contrato.

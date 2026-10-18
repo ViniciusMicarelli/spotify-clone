@@ -27,3 +27,16 @@ test('genre URLs reset page, retain term and size, and clear filters outside art
   for (const type of ['tracks', 'albums']) assert.equal(new URL('https://example.test' + searchUrl('Demo', params, type)).searchParams.has('genre'), false);
   assert.equal(params.get('page'), '3'); assert.equal(params.get('genre'), 'Pop');
 });
+
+test('album artist URLs preserve term and size, reset pages and clear artist outside album search', async () => {
+  const { albumArtistUrl } = await import('../src/utils/search.js');
+  const params = new URLSearchParams('type=albums&page=9&size=10&genre=Pop');
+  const changed = new URL('https://example.test' + albumArtistUrl('Demo', params, 'artist /&'));
+  assert.equal(changed.searchParams.get('artistId'), 'artist /&');
+  assert.equal(changed.searchParams.get('size'), '10'); assert.equal(changed.searchParams.has('page'), false);
+  assert.equal(changed.searchParams.has('genre'), false);
+  params.set('artistId', '1');
+  assert.equal(new URL('https://example.test' + albumArtistUrl('Demo', params, '')).searchParams.has('artistId'), false);
+  for (const type of ['tracks', 'artists']) assert.equal(new URL('https://example.test' + searchUrl('Demo', params, type)).searchParams.has('artistId'), false);
+  assert.equal(params.get('page'), '9');
+});

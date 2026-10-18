@@ -253,3 +253,15 @@ test('public genre inventory is distinct, reflects catalog edits and combines wi
   await request('/artists/' + artist.id, 'DELETE');
   assert.ok(!(await request('/artists/genres')).data.data.includes('Inventário & Jazz'));
 });
+
+test('album artist filter combines search with stable pages and includes collaborations once', async () => {
+  const { saveCatalog } = await import('../data/catalog.js');
+  const albums = Array.from({ length: 25 }, (_, index) => saveCatalog('albums', { name: `Album Artist Filter ${index}`, artists: ['1', '2'] }));
+  for (const artistId of ['1', '2']) {
+    const result = await request('/albums?' + new URLSearchParams({ artistId, search: 'Album Artist Filter', limit: '10', offset: '20' }));
+    assert.equal(result.data.pagination.total, 25);
+    assert.deepEqual(result.data.data.map(album => album.id), albums.slice(20).map(album => album.id));
+  }
+  assert.equal((await request('/albums?artistId=missing&search=Album%20Artist%20Filter')).data.pagination.total, 0);
+  assert.equal((await request('/albums?artistId=1&artistId=2')).status, 400);
+});

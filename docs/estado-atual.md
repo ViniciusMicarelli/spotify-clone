@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 36 testes do backend e 18 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 37 testes do backend e 19 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -239,4 +239,17 @@ Validação: 36 testes backend + 18 frontend e build aprovados. Integração cob
 
 REA `ev_d5fb8d80cd71230090ceabd3a1a8008e5eef87ce29b7278f630c63ca42e9c4c6`: filtro/paginação/recarga/limpeza confirmados; captura parcial porque o último seletor encontrou vários cards de álbum. REA `ev_35e27e15184454bcaf74e4b9c197ab8f837eca086e2846ea424a7284007fe12d`: cenário completo com seletor específico confirmou também a troca para álbuns; zero erros de página. Navegadores e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: filtro por artista na busca de álbuns, reaproveitando artistId da API. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+Etapa seguinte concluída abaixo: filtro por artista na busca de álbuns. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+
+
+## Artista na busca de álbuns — 18/10/2026
+
+A seção Artista do álbum oferece busca por nome, seleção e páginas de 20 artistas, independentes da paginação dos álbuns. O nome selecionado é carregado por ID para continuar visível após recarregar, mesmo fora da página do seletor. Falhas no seletor têm nova tentativa; ID desconhecido fica indisponível e pode ser limpo. A busca/página do seletor fica em memória e reinicia ao reabrir a tela; o filtro aplicado fica na URL.
+
+`artistId` é combinado com o termo e paginação existentes no SQL. Aplicar/limpar começa na primeira página e preserva tamanho; novo termo conserva artista; trocar tipo remove artistId. O componente de resultados remonta ao mudar artista e cancela consultas antigas. API não mudou: EXISTS inclui colaborações uma vez, e parâmetros repetidos seguem rejeitados. Não há múltiplos artistas simultâneos ou atualização em tempo real.
+
+Validação: 37 testes backend + 19 frontend e build aprovados. Integração com 25 álbuns de dois artistas confirma combinação, última página estável, contagem sem duplicação, artista inexistente e parâmetro repetido. Teste de URL cobre codificação, preservação, reset e limpeza ao trocar tipo. `album-artists.mjs` passou no Chromium: aplicar/paginar/recarregar, novo termo, artista além dos primeiros 20, vazio, busca no seletor, limpar, ID desconhecido, troca de tipo e recuperação de falha 500. Zero erros de página. Fixture usa SEARCH_FIXTURE e ALBUM_ARTIST_FIXTURE, sem dados reais.
+
+REA `ev_c33eb87643823be81dfa4761eafac8299ad44fa3a0481edb252cd703fcb61bd0`: cenário completo confirmou Artist 1, 25 álbuns filtrados, página 2, restauração após recarregar e limpeza retornando à primeira página. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: filtro por ano na busca de álbuns, combinado com artista e termo. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.

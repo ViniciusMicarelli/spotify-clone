@@ -30,6 +30,9 @@ transaction(() => {
     }
     saveCatalog('artists', { name: 'Árvore / %_?' });
   }
+  if (process.env.ALBUM_ARTIST_FIXTURE === '1') {
+    for (let i = 1; i <= 25; i++) saveCatalog('albums', { name: `Álbum filtro ${String(i).padStart(2, '0')}`, artists: ['1', '2'] });
+  }
   for (let i = 1; i <= 118; i++) saveCatalog('tracks', { title: `Demo extra ${String(i).padStart(3,'0')}`, duration: 8000, artists: ['1'], albumId: '1', url: '/api/v1/audio/demo-1.wav' });
   const tracks = catalogValues('tracks').reverse();
   const ms = tracks.reduce((sum, track) => sum + track.duration, 0);
