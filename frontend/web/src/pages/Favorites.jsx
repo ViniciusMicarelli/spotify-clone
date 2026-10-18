@@ -1,14 +1,16 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
-import FavoriteButton from '../components/FavoriteButton';
-
+import TrackList from '../components/TrackList';
+import Pagination from '../components/Pagination';
+import usePage from '../hooks/usePage';
 export default function Favorites() {
   const { tracks, authenticated, loading, error } = useFavorites();
   const { play } = useOutletContext();
+  const paging = usePage(loading || error ? undefined : tracks.length);
   return <section><p className="eyebrow">SUA COLEÇÃO</p><h1>Músicas curtidas</h1>
     {!authenticated ? <p><Link to="/auth/login">Entre para acessar suas músicas curtidas.</Link></p> : loading ? <p role="status">Carregando favoritos…</p> : <>
-      <div className="track-list">{tracks.map((track, index) => <article key={track.id} data-track-id={track.id}><span>{index + 1}</span><div><Link to={`/track/${track.id}`}><strong>{track.title}</strong></Link><p className="muted">{track.album.name}</p></div><button onClick={() => play(track, tracks)}>Ouvir</button><FavoriteButton track={track} /></article>)}</div>
-      {!tracks.length && !error && <p>Você ainda não curtiu nenhuma música. <Link to="/">Explore o catálogo.</Link></p>}
+      {!error && <><TrackList tracks={tracks.slice(paging.offset, paging.offset + paging.size)} offset={paging.offset} onPlay={play} emptyMessage="Você ainda não curtiu nenhuma música." /><Pagination page={paging.page} size={paging.size} total={tracks.length} onPage={paging.setPage} onSize={paging.setSize} /></>}
+      {tracks.length > paging.size && <p className="muted">Ao ouvir, a fila usa as faixas desta página.</p>}
     </>}
   </section>;
 }

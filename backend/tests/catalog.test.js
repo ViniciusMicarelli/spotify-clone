@@ -105,3 +105,23 @@ test('catalog migration preserves legacy snapshots, runs once and rolls back inv
   assert.deepEqual(result,{ absent:true,album:'Legacy Album',duration:12345,biography:'Preserved',snapshot:'Legacy Artist' });
   assert.equal(run(`const {getCatalog}=await import(${JSON.stringify(catalog)}); console.log(getCatalog('artists','a').name);`).trim(),'Changed');
 });
+
+test('playlist track pages retain explicit order beyond 100 tracks and protect private contents', async () => {
+  const { saveCatalog } = await import('../data/catalog.js');
+  const { transaction } = await import('../data/store.js');
+  const ids = transaction(() => Array.from({ length: 103 }, (_, index) => saveCatalog('tracks', { title: `Paged ${index + 1}`, duration: 8000, artists: ['1'], albumId: '1', url: '/api/v1/audio/demo-1.wav' }).id)).reverse();
+  const playlist = await create('playlists', { name: '103 tracks', public: false, tracks: ids });
+  const path = '/playlists/'+playlist.id+'/tracks';
+  const first = await request(path+'?limit=20&offset=0');
+  const last = await request(path+'?limit=20&offset=100');
+  assert.equal(first.data.pagination.total, 103);
+  assert.deepEqual(first.data.data.map(track => track.id), ids.slice(0,20));
+  assert.deepEqual(last.data.data.map(track => track.id), ids.slice(100));
+  assert.equal(last.data.data[0].artistDetails[0].name, 'Artist 1');
+  assert.deepEqual((await request(path+'?offset=103')).data.data, []);
+  assert.equal((await request(path+'?limit=101')).status, 400);
+  assert.equal((await request(path+'?offset=1&offset=2')).status, 400);
+  assert.equal((await fetch(base+path)).status, 404);
+  const signup = await request('/auth/signup','POST',{ username:'page_viewer',email:'pages@example.com',password:'password123' });
+  assert.equal((await fetch(base+path,{ headers:{ Authorization:'Bearer '+signup.data.token } })).status, 404);
+});

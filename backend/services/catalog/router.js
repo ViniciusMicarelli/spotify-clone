@@ -1,7 +1,7 @@
 import express from 'express';
 import authMiddleware from '../../middleware/auth.js';
-import { getCatalog, catalogValues, saveCatalog, deleteCatalog } from '../../data/catalog.js';
-const enrich = (kind, value) => kind !== 'tracks' ? value : { ...value, artistDetails: value.artists.map(id => { const artist = getCatalog('artists',id); return { id, name: artist.name }; }) };
+import { getCatalog, catalogValues, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
+const enrich = (kind, value) => kind !== 'tracks' ? value : trackDetails(value);
 function routerFor(kind) {
   const router = express.Router();
   router.get('/', (req,res) => {

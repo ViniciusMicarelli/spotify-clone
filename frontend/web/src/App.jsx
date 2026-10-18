@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import Catalog from './pages/Catalog';
+import CreatePlaylist from './pages/CreatePlaylist';
 import Playlist from './pages/Playlist';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
@@ -24,7 +25,7 @@ export default function App() {
       <Route path="album/:id" element={<Catalog kind="albums" />} />
       <Route path="playlist/:id" element={<Playlist />} />
       <Route path="track/:id" element={<Catalog kind="tracks" />} />
-      <Route path="create-playlist" element={<Catalog kind="playlists" create />} />
+      <Route path="create-playlist" element={<CreatePlaylist />} />
     </Route>
     <Route path="auth/login" element={<Login />} />
     <Route path="auth/signup" element={<Signup />} />

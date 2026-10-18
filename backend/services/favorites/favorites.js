@@ -2,13 +2,14 @@ import express from 'express';
 import authMiddleware from '../../middleware/auth.js';
 import { PersistentMap, transaction } from '../../data/store.js';
 import tracks from '../tracks/tracks.js';
+import { trackDetails } from '../../data/catalog.js';
 
 const favoritesDB = new PersistentMap('favorites');
 const router = express.Router();
 router.use(authMiddleware);
 function result(userId) {
   const ids = (favoritesDB.get(userId) || []).filter(id => tracks.tracksDB.has(id));
-  return { trackIds: ids, data: ids.map(id => tracks.tracksDB.get(id)) };
+  return { trackIds: ids, data: ids.map(id => trackDetails(tracks.tracksDB.get(id))) };
 }
 router.get('/', (req, res) => res.json(result(req.userId)));
 router.put('/:trackId', (req, res) => {

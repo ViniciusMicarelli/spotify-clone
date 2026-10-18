@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { api, useAuth } from '../context/AuthContext';
-import FavoriteButton from '../components/FavoriteButton';
+import TrackList from '../components/TrackList';
+import TrackPicker from '../components/TrackPicker';
+import Pagination from '../components/Pagination';
+import usePage from '../hooks/usePage';
 
 export default function Playlist() {
   const { id } = useParams();
@@ -9,24 +12,25 @@ export default function Playlist() {
   const { play } = useOutletContext();
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState(null);
-  const [catalog, setCatalog] = useState([]);
+  const paging = usePage();
+  const [tracks, setTracks] = useState([]);
+  const [trackLoading, setTrackLoading] = useState(true);
+  const [trackError, setTrackError] = useState('');
+  const [total, setTotal] = useState(0);
+  const [revision, setRevision] = useState(0);
   const [fields, setFields] = useState({ name: '', description: '', public: true });
-  const [selected, setSelected] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setPlaylist(null); setError(''); setMessage(''); setSelected('');
+    setLoading(true); setPlaylist(null); setError(''); setMessage('');
     async function load() {
       try {
-        const [detail, tracks] = await Promise.all([
-          api.get(`/playlists/${id}`, { signal: controller.signal }),
-          api.get('/tracks', { params: { limit: 100 }, signal: controller.signal })
-        ]);
+        const detail = await api.get(`/playlists/${id}`, { signal: controller.signal });
         if (!controller.signal.aborted) {
-          setPlaylist(detail.data.data); setCatalog(tracks.data.data);
+          setPlaylist(detail.data.data);
           setFields({ name: detail.data.data.name, description: detail.data.data.description, public: detail.data.data.public });
         }
       } catch (error) { if (!controller.signal.aborted) setError(error.response?.data?.error || 'Não foi possível carregar a playlist.'); }
@@ -36,16 +40,24 @@ export default function Playlist() {
     return () => controller.abort();
   }, [id, token]);
   const owner = playlist && playlist.owner.id === user?.id;
-  const tracks = (playlist?.tracks || []).map(id => catalog.find(track => track.id === id)).filter(Boolean);
-  const available = catalog.filter(track => !playlist?.tracks.includes(track.id));
+  useEffect(() => {
+    const controller = new AbortController(); setTrackLoading(true); setTrackError('');
+    api.get(`/playlists/${id}/tracks`, { params: { limit: paging.size, offset: paging.offset }, signal: controller.signal }).then(({ data }) => {
+      if (controller.signal.aborted) return;
+      const last = Math.max(1, Math.ceil(data.pagination.total / paging.size));
+      if (paging.page > last) { paging.setPage(last, true); return; }
+      setTracks(data.data); setTotal(data.pagination.total); setTrackLoading(false);
+    }).catch(error => { if (!controller.signal.aborted) { setTrackError(error.response?.data?.error || 'Não foi possível carregar as faixas.'); setTrackLoading(false); } });
+    return () => controller.abort();
+  }, [id, token, paging.page, paging.size, revision]);
   async function mutate(method, suffix, body, success) {
     setPending(true); setError(''); setMessage('');
     try {
       const { data } = await api.request({ url: `/playlists/${id}${suffix}`, method, data: body });
-      if (method === 'delete' && !suffix) { navigate('/library'); return; }
+      if (method === 'delete' && !suffix) { navigate('/library'); return true; }
       setPlaylist(data.data); setMessage(success);
-      if (method === 'post') setSelected('');
-    } catch (error) { setError(error.response?.data?.error || 'Não foi possível salvar a alteração.'); }
+      setRevision(value => value + 1); return true;
+    } catch (error) { setError(error.response?.data?.error || 'Não foi possível salvar a alteração.'); return false; }
     finally { setPending(false); }
   }
   function move(trackId, direction) {
@@ -58,7 +70,7 @@ export default function Playlist() {
   }
   if (loading) return <p role="status">Carregando playlist…</p>;
   if (!playlist) return <p role="alert">{error}</p>;
-  return <section><p className="eyebrow">PLAYLIST · {playlist.public ? 'PÚBLICA' : 'PRIVADA'}</p><h1>{playlist.name}</h1><p>{playlist.description}</p><p className="muted">Por {playlist.owner.name} · {tracks.length} faixas · {playlist.duration.formatted}</p>
+  return <section><p className="eyebrow">PLAYLIST · {playlist.public ? 'PÚBLICA' : 'PRIVADA'}</p><h1>{playlist.name}</h1><p>{playlist.description}</p><p className="muted">Por {playlist.owner.name} · {playlist.tracks.length} faixas · {playlist.duration.formatted}</p>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {owner && <div className="playlist-editor">
       <form onSubmit={event => { event.preventDefault(); mutate('put', '', fields, 'Playlist salva.'); }}>
@@ -67,13 +79,16 @@ export default function Playlist() {
         <label className="checkbox"><input type="checkbox" checked={fields.public} onChange={e => setFields({ ...fields, public: e.target.checked })} />Playlist pública</label>
         <button disabled={pending}>Salvar alterações</button>
       </form>
-      <form onSubmit={event => { event.preventDefault(); mutate('post', '/tracks', { trackIds: [selected] }, 'Faixa adicionada.'); }}>
-        <h2>Adicionar música</h2><label>Faixa<select required value={selected} onChange={e => setSelected(e.target.value)}><option value="">Selecione uma faixa</option>{available.map(track => <option key={track.id} value={track.id}>{track.title}</option>)}</select></label>
-        <button disabled={pending || !selected}>Adicionar faixa</button>{!available.length && <p className="muted">Todas as faixas do catálogo já estão nesta playlist.</p>}
-      </form>
+      <TrackPicker included={playlist.tracks} pending={pending} onAdd={id => mutate('post', '/tracks', { trackIds: [id] }, 'Faixa adicionada.')} />
     </div>}
-    <div className="track-list">{tracks.map((track, index) => <article key={track.id} data-track-id={track.id}><span>{index + 1}</span><div><Link to={`/track/${track.id}`}><strong>{track.title}</strong></Link><p className="muted">{track.album.name}</p></div><button onClick={() => play(track, tracks)}>Ouvir</button><FavoriteButton track={track} />{owner && <div className="track-order"><button className="secondary" aria-label={`Subir ${track.title}`} disabled={pending || index === 0} onClick={() => move(track.id, -1)}>↑</button><button className="secondary" aria-label={`Descer ${track.title}`} disabled={pending || index === tracks.length - 1} onClick={() => move(track.id, 1)}>↓</button></div>}{owner && <button className="secondary" disabled={pending} aria-label={`Remover ${track.title}`} onClick={() => mutate('delete', `/tracks/${track.id}`, undefined, 'Faixa removida.')}>Remover</button>}</article>)}</div>
-    {!tracks.length && <p>Esta playlist ainda não tem músicas.</p>}
+    <div className="playlist-tracks">{trackError ? <p role="alert">{trackError}</p> : trackLoading ? <p role="status">Carregando faixas…</p> : <>
+      <TrackList tracks={tracks} onPlay={play} offset={paging.offset} emptyMessage="Esta playlist ainda não tem músicas." renderActions={owner ? (track, index) => <>
+        <div className="track-order"><button className="secondary" aria-label={`Subir ${track.title}`} disabled={pending || index === 0} onClick={() => move(track.id, -1)}>↑</button><button className="secondary" aria-label={`Descer ${track.title}`} disabled={pending || index === playlist.tracks.length - 1} onClick={() => move(track.id, 1)}>↓</button></div>
+        <button className="secondary" disabled={pending} aria-label={`Remover ${track.title}`} onClick={() => mutate('delete', `/tracks/${track.id}`, undefined, 'Faixa removida.')}>Remover</button>
+      </> : undefined} />
+      <Pagination page={paging.page} size={paging.size} total={total} onPage={paging.setPage} onSize={paging.setSize} />
+      {total > paging.size && <p className="muted">Ao ouvir, a fila usa as faixas desta página.</p>}
+    </>}</div>
     {owner && <button className="danger" disabled={pending} onClick={() => mutate('delete', '', undefined, '')}>Excluir playlist</button>}
   </section>;
 }

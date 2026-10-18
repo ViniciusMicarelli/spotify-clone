@@ -34,7 +34,7 @@ npm test --prefix frontend/web
 npm run build --prefix frontend/web
 ```
 
-Os 22 testes do backend (17 de API/sessão e cinco de armazenamento/migração) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. Oito testes do frontend verificam a fila, shuffle, repetição e remoção de faixas.
+Os 23 testes do backend (18 de API/sessão e cinco de armazenamento/migração) usam diretórios temporários e portas aleatórias. Validam catálogo, autenticação, perfis, isolamento entre contas, playlists, reordenação, favoritos por conta e persistência em um novo processo e entrega de áudio com requisições parciais, migração, rollback e concorrência. 11 testes do frontend verificam a fila, shuffle, repetição, remoção de faixas e cálculo seguro das páginas.
 
 ## Configuração e limites
 
@@ -57,4 +57,7 @@ Os 22 testes do backend (17 de API/sessão e cinco de armazenamento/migração) 
 - Requisições com acesso expirado compartilham uma renovação e são repetidas uma única vez. Recarregar restaura a sessão pelo cookie. Logout revoga a sessão no servidor, e reutilizar um refresh antigo revoga toda a família daquele login.
 - A atualização remove o antigo token do localStorage; sessões da versão anterior exigem novo login. Use frontend/API no mesmo site (em desenvolvimento, mantenha o mesmo hostname); para produção com origens distintas, configure `FRONTEND_ORIGIN`.
 - OAuth, arrastar e soltar e colaboração continuam pendentes. O protótipo destina-se a uso local.
-- Existem componentes antigos fora do fluxo atual; o build parte de `frontend/web/src/main.jsx`.
+- Catálogo, busca, biblioteca, detalhes de artista/álbum e faixas de playlists têm paginação de 10, 20 ou 50 itens, com página/quantidade na URL. URLs fora do intervalo são corrigidas após carregar os totais. Uma nova busca começa na primeira página.
+- A fila iniciada por uma lista paginada usa somente as faixas da página atual. Playlists preservam a ordem global e permitem reordenar entre páginas. Adicionar música usa busca paginada, sem o limite anterior de 100 faixas.
+- Favoritos são paginados na interface; o contexto ainda carrega a coleção completa para compartilhar as curtidas entre telas. A API de catálogo ainda filtra os resultados em memória, antes de devolver a página.
+- Listas usam `TrackList` compartilhado e paginação reutilizável. Os dez arquivos antigos fora do fluxo foram removidos, junto com dependências sem uso. O único ponto de entrada web é `frontend/web/src/main.jsx`.

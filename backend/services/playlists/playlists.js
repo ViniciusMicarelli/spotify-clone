@@ -4,6 +4,8 @@ import authMiddleware from '../../middleware/auth.js';
 import { usersDB } from '../../data/users.js';
 import { PersistentMap, transaction } from '../../data/store.js';
 import tracks from '../tracks/tracks.js';
+import { trackDetails } from '../../data/catalog.js';
+import { parsePagination } from '../../utils/pagination.js';
 const { tracksDB } = tracks;
 // Mock playlist data for demo
 const mockPlaylists = [
@@ -70,6 +72,18 @@ router.post('/', (req, res) => {
   const user = usersDB.get(req.userId);
   const playlist = save({ id: randomUUID(), name: name.trim(), description, owner: { id: user.id, username: user.username, name: user.name }, tracks, public: isPublic, collaborative: false, createdAt: new Date().toISOString() });
   res.status(201).json({ data: playlist });
+});
+router.get('/:id/tracks', (req, res) => {
+  const playlist = playlistsDB.get(req.params.id);
+  if (!playlist || !visible(playlist, req.userId)) return res.status(404).json({ error: 'Playlist não encontrada.' });
+  const page = parsePagination(req.query);
+  if (!page) return res.status(400).json({ error: 'Paginação inválida.' });
+  const ids = playlist.tracks.filter(id => tracksDB.has(id));
+  const data = ids.slice(page.offset, page.offset + page.limit).map(id => {
+    const track = tracksDB.get(id);
+    return trackDetails(track);
+  });
+  res.json({ data, pagination: { ...page, total: ids.length } });
 });
 router.get('/:id', (req, res) => {
   const playlist = playlistsDB.get(req.params.id);

@@ -21,6 +21,7 @@ Entrada única: `api-gateway/index.js`, porta 3000 por padrão. Não é necessá
 - `/api/v1/tracks`, `/api/v1/albums`, `/api/v1/artists` — leitura pública; mutações somente para administradores
 - `GET/POST /api/v1/playlists` — listar playlists visíveis / criar playlist
 - `GET/PUT/DELETE /api/v1/playlists/:id` — detalhe / editar / excluir
+- `GET /api/v1/playlists/:id/tracks?limit=20&offset=0` — faixas na ordem da playlist, com dados de artistas e paginação
 - `POST /api/v1/playlists/:id/tracks` — `{ "trackIds": ["1", "2"] }`
 - `DELETE /api/v1/playlists/:id/tracks/:trackId` — remover faixa
 - `PUT /api/v1/playlists/:id/tracks/order` — `{ "trackIds": ["2", "1"] }`, permutação exata das faixas atuais; somente proprietário
@@ -71,3 +72,7 @@ Mutações exigem administrador e usam UUIDs:
 - Excluir álbum com faixas ou artista com vínculos retorna 409. Primeiro mova/remova as faixas e vínculos. Excluir faixa limpa playlists/favoritos e recalcula durações na mesma transação; falha em qualquer etapa faz rollback completo.
 
 Não há tela de administração ou cadastro de administrador pela interface. Os testes usam uma conta administrativa em banco temporário.
+
+A leitura paginada de faixas valida limit (1–100) e offset inteiro seguro não negativo. Retorna `{ data, pagination: { total, limit, offset } }`, respeitando a mesma visibilidade do detalhe: conteúdo privado retorna 404 para outros usuários e visitantes. Não depende de carregar as primeiras 100 faixas do catálogo. O teste de API usa 103 faixas e verifica a página posterior à posição 100.
+
+A fixture `node backend/tests/fixtures/pagination-server.js` serve o build com SQLite temporário, 121 faixas e uma playlist privada da conta demo, em 127.0.0.1:5175. Não altera o banco normal. Encerre o processo ao terminar.

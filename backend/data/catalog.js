@@ -66,6 +66,7 @@ export function getCatalog(kind, id) {
   const value = row('SELECT t.*, a.name AS album_name, a.uri AS album_uri FROM catalog_tracks t JOIN catalog_albums a ON a.id=t.album_id WHERE t.id=?',id);
   return value && { ...JSON.parse(value.metadata), id, title: value.title, duration: value.duration, url: value.url, uri: value.uri, artists: ids('catalog_track_artists','track_id',id), album: { id: value.album_id, name: value.album_name, uri: value.album_uri } };
 }
+export function trackDetails(track) { return { ...track, artistDetails: track.artists.map(id => ({ id, name: getCatalog('artists',id).name })) }; }
 export function catalogValues(kind) { return rows(`SELECT id FROM catalog_${kind} ORDER BY rowid`).map(value => getCatalog(kind, value.id)); }
 function validUrl(value) {
   if (typeof value !== 'string') return false;

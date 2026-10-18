@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 22 testes do backend (17 de API/sessões e cinco de armazenamento/migração) e oito testes da fila passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 23 testes do backend (18 de API/sessões e cinco de armazenamento/migração) e 11 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -89,4 +89,22 @@ REA `ev_f40c4a7b645cc1d0ba770cd6ea3d0c533e4c5e5ac4f141d3576efb6efa6231e6`: catá
 
 Os descritores antigos foram substituídos por routers validados. Álbum com faixas ou artista ainda referenciado retorna 409 na exclusão. A exclusão de faixa atualiza playlists, favoritos e durações na mesma transação. Contas, sessões, playlists e favoritos permanecem documentais; não há painel de administração.
 
-Próxima etapa sugerida: remover os componentes antigos fora do fluxo, consolidar os componentes de listagem e melhorar a paginação da interface. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.
+## Listas, limpeza e paginação
+
+Removidos dez arquivos sem uso no grafo de imports: entrada web paralela, layouts, players e estilos antigos. Dependências não utilizadas foram removidas (91 pacotes transitivos deixaram a instalação). Catálogo, playlists e favoritos usam TrackList; Pagination/usePage compartilham cálculo e navegação. A criação de playlist passou para uma página própria.
+
+Página e tamanho (10/20/50) ficam na URL; a interface corrige páginas acima do total. A fila usa as faixas da página atual, com aviso quando há mais de uma página. Favoritos ainda são carregados integralmente pelo contexto, com paginação local. A API de catálogo ainda filtra em memória. A seleção de músicas para adicionar à playlist usa busca e páginas independentes de 20 itens.
+
+O endpoint GET /playlists/:id/tracks lê os IDs da playlist na ordem salva, aplica limit/offset e retorna metadados completos. Ele elimina a dependência das primeiras 100 faixas do catálogo. Teste com 103 faixas confirma ordem e proteção de conteúdo privado. Três testes do frontend validam offsets, exclusão do único item da última página e parâmetros inseguros.
+
+REA, fixture isolada de produção com 121 faixas em 127.0.0.1:5175:
+
+- `ev_8320586187536ba6ae121320be16662885c76789f3181c2131c5f65e868f0934`: cenário completo de tamanho da página, próxima página, restauração após recarregar, nova busca e correção de page=999. Zero erros de página.
+- `ev_75cd2999693b5133c8e63c4edbf1988c153a546aa529601370554eb6c8aa24b9`: remoção na última página levou à anterior, e a faixa foi encontrada e adicionada novamente; o cenário ficou parcial por timeout no passo posterior de reordenação.
+- `ev_e4afd2347a45359777afc839cdda566960d50a26b052dd27c345c2ab1f34f9b3`: cenário separado completo de reordenação da faixa 121 para a página anterior, com PUT 200 e confirmação da nova posição.
+- `ev_9e7f92cb2f1895c95b8bd686274943ca6215bfa994ea9c6c2e1ffd7fe825bbf1`: tentativa longa parcial por timeout após adicionar a faixa; não comprova o fluxo completo.
+- `ev_7f37392b0ed746a290aa88890d097b6e1970ecee7cf9df9f016a5f04b5913703`: cenário completo com busca, seleção, espera do botão habilitado, adição e reordenação entre páginas; a posição na página anterior foi confirmada. Zero erros de página. Usou ativação por teclado nos controles.
+
+Os navegadores temporários foram encerrados pela REA. O processo da fixture também foi encerrado ao final.
+
+Próxima etapa sugerida: aplicar filtros e paginação diretamente no SQL, mantendo os contratos atuais. OAuth e colaboração permanecem pendentes; follow ainda não foi implementado.
