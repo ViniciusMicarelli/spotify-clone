@@ -7,7 +7,7 @@ export function searchUrl(query, params = new URLSearchParams(), type = searchTy
   const next = new URLSearchParams(params);
   next.delete('page');
   if (type !== 'artists') next.delete('genre');
-  if (type !== 'albums') next.delete('artistId');
+  if (type !== 'albums') { next.delete('artistId'); next.delete('year'); }
   if (type === 'tracks' || !Object.hasOwn(SEARCH_TYPES, type)) next.delete('type');
   else next.set('type', type);
   const term = query.trim();
@@ -23,5 +23,11 @@ export function genreUrl(query, params, genre) {
 export function albumArtistUrl(query, params, artistId) {
   const next = new URLSearchParams(params);
   if (artistId) next.set('artistId', artistId); else next.delete('artistId');
+  return searchUrl(query, next, 'albums');
+}
+
+export function albumYearUrl(query, params, year) {
+  const next = new URLSearchParams(params);
+  if (year) next.set('year', year); else next.delete('year');
   return searchUrl(query, next, 'albums');
 }

@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 37 testes do backend e 19 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 38 testes do backend e 20 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -252,4 +252,17 @@ Validação: 37 testes backend + 19 frontend e build aprovados. Integração com
 
 REA `ev_c33eb87643823be81dfa4761eafac8299ad44fa3a0481edb252cd703fcb61bd0`: cenário completo confirmou Artist 1, 25 álbuns filtrados, página 2, restauração após recarregar e limpeza retornando à primeira página. Zero erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: filtro por ano na busca de álbuns, combinado com artista e termo. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+Etapa seguinte concluída abaixo: filtro por ano na busca de álbuns. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.
+
+
+## Ano na busca de álbuns — 18/10/2026
+
+O formulário Ano do álbum aplica um ano exato (1–9999) à URL. Artista, termo e tamanho são mantidos; aplicar/limpar reinicia a primeira página, novo termo conserva o ano e trocar tipo remove ano/artista. A interface mantém Limpar ano para recuperar links inválidos, inclusive valores vazios ou não numéricos. Resultados são remontados ao mudar ano, com cancelamento da consulta anterior.
+
+A API valida parâmetro único, string decimal sem sinal/zeros à esquerda, e limita o filtro à listagem de álbuns. Predicado json_extract numérico é combinado com os filtros existentes antes da contagem e LIMIT/OFFSET. Ano ausente/null não corresponde a um filtro específico. Não há intervalo de anos, seletor de anos disponíveis ou ordenação nesta etapa.
+
+Validação: 38 testes backend + 20 frontend e build aprovados. Integração cobre 25 álbuns do mesmo ano, artista/termo, última página, ano distinto/sem correspondência, campos inválidos/repetidos e uso em outro catálogo. Teste de URL cobre preservação, reset e limpeza por tipo. `album-years.mjs` passou no Chromium: aplicar, paginar, recarregar, novo termo, vazio, limpar mantendo artista, link inválido, formulário inválido e troca de tipo; zero erros de página. Usa ALBUM_YEAR_FIXTURE isolada.
+
+REA `ev_f2b14a0f3eda8afa07db2426d51a03ef79b8e409386c37d1b49e4e58f3043e43`: cenário completo confirmou ano 2024 combinado com Artist 1, 25 resultados, página 2, restauração após recarregar e limpeza reiniciando a página sem perder o artista. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: ordenar resultados de álbuns por nome ou ano, mantendo filtros e paginação estável. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.

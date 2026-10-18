@@ -83,7 +83,7 @@ export function trackDetails(track) { return { ...track, artistDetails: track.ar
 export function catalogValues(kind) { return rows(`SELECT id FROM catalog_${kind} ORDER BY rowid`).map(value => getCatalog(kind, value.id)); }
 // Match JavaScript's Unicode casing and literal substring semantics in SQL.
 db.function('catalog_lower', { deterministic: true }, value => value.toLowerCase());
-export function listCatalog(kind, { limit, offset, search = '', artistId, albumId, genre }) {
+export function listCatalog(kind, { limit, offset, search = '', artistId, albumId, genre, year }) {
   if (!kinds.includes(kind)) throw new Error('Tipo de catálogo inválido.');
   const predicates = [], parameters = [];
   if (search) {
@@ -102,6 +102,7 @@ export function listCatalog(kind, { limit, offset, search = '', artistId, albumI
   }
   if (albumId) { predicates.push(kind === 'tracks' ? 'c.album_id=?' : '0'); if (kind === 'tracks') parameters.push(albumId); }
   if (genre) { predicates.push(kind === 'artists' ? 'EXISTS (SELECT 1 FROM catalog_artist_genres cg WHERE cg.artist_id=c.id AND cg.genre=?)' : '0'); if (kind === 'artists') parameters.push(genre); }
+  if (year !== undefined) { predicates.push(kind === 'albums' ? "json_extract(c.metadata, '$.year') = ?" : '0'); if (kind === 'albums') parameters.push(Number(year)); }
   const from = `FROM catalog_${kind} c${predicates.length ? ' WHERE ' + predicates.join(' AND ') : ''}`;
   // A read snapshot keeps count, page and metadata consistent across processes.
   // Only page IDs are hydrated, without loading unrelated records.

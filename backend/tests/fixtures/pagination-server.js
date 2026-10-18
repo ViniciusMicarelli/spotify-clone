@@ -30,6 +30,10 @@ transaction(() => {
     }
     saveCatalog('artists', { name: 'Árvore / %_?' });
   }
+  if (process.env.ALBUM_YEAR_FIXTURE === '1') {
+    for (let i = 1; i <= 25; i++) saveCatalog('albums', { name: `Álbum ano ${String(i).padStart(2, '0')}`, year: 2024, artists: ['1','2'] });
+    saveCatalog('albums', { name: 'Álbum ano anterior', year: 2023, artists: ['1'] });
+  }
   if (process.env.ALBUM_ARTIST_FIXTURE === '1') {
     for (let i = 1; i <= 25; i++) saveCatalog('albums', { name: `Álbum filtro ${String(i).padStart(2, '0')}`, artists: ['1', '2'] });
   }

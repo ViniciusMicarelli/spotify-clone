@@ -265,3 +265,18 @@ test('album artist filter combines search with stable pages and includes collabo
   assert.equal((await request('/albums?artistId=missing&search=Album%20Artist%20Filter')).data.pagination.total, 0);
   assert.equal((await request('/albums?artistId=1&artistId=2')).status, 400);
 });
+
+test('album year filter validates input and combines year, artist, title and SQL pagination', async () => {
+  const { saveCatalog } = await import('../data/catalog.js');
+  const albums = Array.from({ length: 25 }, (_, index) => saveCatalog('albums', { name: `Year Filter ${index}`, year: 2024, artists: ['1','2'] }));
+  saveCatalog('albums', { name: 'Year Filter other', year: 2023, artists: ['1'] });
+  saveCatalog('albums', { name: 'Year Filter unknown', artists: ['1'] });
+  const result = await request('/albums?search=Year%20Filter&year=2024&artistId=2&limit=10&offset=20');
+  assert.equal(result.data.pagination.total, 25);
+  assert.deepEqual(result.data.data.map(album => album.id), albums.slice(20).map(album => album.id));
+  assert.equal((await request('/albums?search=Year%20Filter&year=2023')).data.pagination.total, 1);
+  assert.equal((await request('/albums?year=9999')).data.pagination.total, 0);
+  for (const year of ['', '0','10000','02024','-1','2024.5','abc','1e3']) assert.equal((await request('/albums?year=' + year)).status, 400);
+  assert.equal((await request('/albums?year=2023&year=2024')).status, 400);
+  assert.equal((await request('/artists?year=2024')).status, 400);
+});

@@ -120,3 +120,6 @@ Respostas de faixa incluem `technical`, derivado e somente de leitura: `{ contai
 
 
 O filtro existente `GET /api/v1/albums?artistId=<id>&search=<nome>&limit=10&offset=0` é usado pela interface. Ele combina nome do álbum com associação ao artista (EXISTS), preservando ordem e contagem sem duplicar colaborações. Artista desconhecido retorna zero resultados; parâmetros artistId repetidos são inválidos. O seletor da interface usa a listagem paginada de `/artists` e detalhes do artista selecionado; não exige nova rota ou mudanças no contrato.
+
+
+`GET /api/v1/albums?year=2024&artistId=1&search=Demo&limit=10&offset=0` combina ano exato, associação de artista e nome, com contagem/paginação no SQL. O ano consulta o valor numérico no metadata JSON. Anos ausentes/null não correspondem. O parâmetro deve ter de 1 a 4 dígitos, começar em 1–9 e representar 1–9999; vazio, repetido, decimal, sinal, zeros à esquerda ou ano em outro tipo de catálogo retornam 400. Ano válido sem correspondência retorna zero resultados.
