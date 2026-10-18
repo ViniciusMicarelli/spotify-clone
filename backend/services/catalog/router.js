@@ -1,4 +1,5 @@
 import express from 'express';
+import { database } from '../../data/store.js';
 import { audioWaveform } from '../../data/audio-metadata.js';
 import authMiddleware from '../../middleware/auth.js';
 import { getCatalog, listCatalog, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
@@ -17,6 +18,7 @@ function routerFor(kind) {
     if (!track) return res.status(404).json({ error: 'Faixa não encontrada.' });
     res.json({ data: audioWaveform(track.url) });
   });
+  if (kind === 'artists') router.get('/genres', (req, res) => res.json({ data: database.prepare('SELECT DISTINCT genre FROM catalog_artist_genres ORDER BY genre').all().map(row => row.genre) }));
   router.get('/:id',(req,res) => {
     const value = getCatalog(kind,req.params.id);
     if (!value) return res.status(404).json({ error: 'Registro não encontrado.' });

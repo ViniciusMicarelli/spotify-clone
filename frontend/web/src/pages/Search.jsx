@@ -1,5 +1,6 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Catalog from './Catalog';
+import ArtistGenreFilter from '../components/ArtistGenreFilter';
 import { SEARCH_TYPES, searchType, searchUrl } from '../utils/search';
 
 export default function Search() {
@@ -8,6 +9,7 @@ export default function Search() {
   const type = searchType(params);
   return <>
     <nav className="search-types" aria-label="Tipos de resultado">{Object.entries(SEARCH_TYPES).map(([value, label]) => <Link key={value} to={searchUrl(query, params, value)} aria-current={type === value ? 'page' : undefined}>{label}</Link>)}</nav>
-    <Catalog key={`${type}:${query}`} kind={type} search />
+    {type === 'artists' && <ArtistGenreFilter />}
+    <Catalog key={`${type}:${query}:${type === 'artists' ? params.get('genre') || '' : ''}`} kind={type} search />
   </>;
 }

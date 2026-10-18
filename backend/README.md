@@ -114,3 +114,6 @@ Respostas de faixa incluem `technical`, derivado e somente de leitura: `{ contai
 
 
 `GET /api/v1/tracks/:id/waveform` é público e retorna `{ data: { durationMs, peaks } }` com 96 amplitudes entre 0 e 1, ou `{ data: null }` para áudio sem prévia. Faixa inexistente retorna 404. A resposta comum de faixas não incorpora os picos. Os picos usam a maior amplitude absoluta de todos os canais em cada intervalo do arquivo; silêncio é zero. O cálculo suporta PCM inteiro 8/16/24/32 bits, compartilha o parser validado e o snapshot por processo dos três demos locais, sem rede ou caminhos fornecidos pelo cliente. Trocar arquivos exige reiniciar a API.
+
+
+`GET /api/v1/artists/genres` retorna `{ data: ["Electronic", ...] }`, com todos os gêneros distintos dos artistas, ordenados no SQLite. É público e independente da paginação e do termo pesquisado; não inclui gêneros exclusivos de álbuns. `GET /artists?search=...&genre=...&limit=...&offset=...` combina nome e gênero exato (incluindo maiúsculas/minúsculas). Gênero inexistente retorna lista vazia. Cadastro/edição/exclusão do catálogo é refletido na próxima consulta da lista.

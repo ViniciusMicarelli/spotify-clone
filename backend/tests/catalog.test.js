@@ -240,3 +240,16 @@ test('waveform route is public, bounded and nullable without altering track resp
   assert.equal((await request('/tracks/' + track.id + '/waveform')).data.data, null);
   await request('/tracks/' + track.id, 'DELETE');
 });
+
+test('public genre inventory is distinct, reflects catalog edits and combines with paginated search', async () => {
+  const artist = await create('artists', { name: 'Genre Inventory', genres: ['Inventário & Jazz', 'Pop'] });
+  const response = await fetch(base + '/artists/genres'); assert.equal(response.status, 200);
+  const genres = (await response.json()).data;
+  assert.equal(genres.filter(genre => genre === 'Pop').length, 1);
+  assert.ok(genres.includes('Inventário & Jazz'));
+  const page = await request('/artists?' + new URLSearchParams({ search: 'Genre', genre: 'Inventário & Jazz', limit: '1', offset: '0' }));
+  assert.equal(page.data.pagination.total, 1); assert.equal(page.data.data[0].id, artist.id);
+  assert.equal((await request('/artists?genre=missing')).data.pagination.total, 0);
+  await request('/artists/' + artist.id, 'DELETE');
+  assert.ok(!(await request('/artists/genres')).data.data.includes('Inventário & Jazz'));
+});

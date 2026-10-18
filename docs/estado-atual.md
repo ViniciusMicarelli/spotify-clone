@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 35 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 36 testes do backend e 18 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -228,4 +228,15 @@ Validação: 35 testes backend + 17 frontend e build aprovados. Novos testes cob
 
 REA `ev_d5e095bb990fdd76caa0c34ed1c63b6cc8512188f79a238c3e5bec35a52948f9`: cenário completo confirmou reprodução, prévia com GET 200, End na posição 8s, Home em 0s e seta em 0,1s, sincronizados com a barra. Zero erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: filtro por gênero na busca de artistas, reaproveitando o filtro SQL existente. OAuth e colaboração permanecem pendentes.
+Etapa seguinte concluída abaixo: filtro por gênero na busca de artistas. OAuth e colaboração permanecem pendentes.
+
+
+## Gênero na busca de artistas — 18/10/2026
+
+O seletor usa `/artists/genres`, endpoint público com DISTINCT/ORDER BY no SQL sobre o catálogo completo de artistas. O filtro existente combina gênero exato com nome e paginação. URL preserva genre/termo/tamanho, muda para a primeira página ao alterar/limpar e descarta gênero ao escolher músicas/álbuns. Opção desconhecida/removida continua selecionada e pode ser limpa. A lista de gêneros tem carga/erro/nova tentativa independentes dos resultados; não há atualização em tempo real nem múltiplos gêneros simultâneos.
+
+Validação: 36 testes backend + 18 frontend e build aprovados. Integração cobre lista pública distinta, mudanças no catálogo, filtros combinados e resultado vazio. Teste de URL cobre codificação, tamanho, reset e limpeza ao trocar tipo. `artist-genres.mjs` passou no Chromium com 25 artistas de gênero Demo: opções fora da página, paginação/recarga, novo termo mantendo gênero, vazio, limpeza, troca para álbuns, gênero removido e falha 500 seguida de recuperação. Zero erros de página. O primeiro roteiro precisou aguardar a presença de options no DOM, pois options de select nativo não são elementos visíveis fechados.
+
+REA `ev_d5fb8d80cd71230090ceabd3a1a8008e5eef87ce29b7278f630c63ca42e9c4c6`: filtro/paginação/recarga/limpeza confirmados; captura parcial porque o último seletor encontrou vários cards de álbum. REA `ev_35e27e15184454bcaf74e4b9c197ab8f837eca086e2846ea424a7284007fe12d`: cenário completo com seletor específico confirmou também a troca para álbuns; zero erros de página. Navegadores e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: filtro por artista na busca de álbuns, reaproveitando artistId da API. OAuth e colaboração permanecem pendentes; busca avançada continua parcial.

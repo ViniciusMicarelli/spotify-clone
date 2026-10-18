@@ -15,3 +15,15 @@ test('new search and type switches reset page while keeping size and safe encode
   assert.equal(params.get('page'), '7');
   assert.equal(params.get('type'), 'artists');
 });
+
+test('genre URLs reset page, retain term and size, and clear filters outside artist search', async () => {
+  const { genreUrl } = await import('../src/utils/search.js');
+  const params = new URLSearchParams('type=artists&page=3&size=10&genre=Pop');
+  const changed = new URL('https://example.test' + genreUrl('Árvore', params, 'Ação & Jazz'));
+  assert.equal(changed.searchParams.get('genre'), 'Ação & Jazz');
+  assert.equal(changed.searchParams.has('page'), false);
+  assert.equal(changed.searchParams.get('size'), '10');
+  assert.equal(new URL('https://example.test' + genreUrl('Árvore', params, '')).searchParams.has('genre'), false);
+  for (const type of ['tracks', 'albums']) assert.equal(new URL('https://example.test' + searchUrl('Demo', params, type)).searchParams.has('genre'), false);
+  assert.equal(params.get('page'), '3'); assert.equal(params.get('genre'), 'Pop');
+});
