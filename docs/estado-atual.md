@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 33 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 35 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -215,4 +215,17 @@ Validação: 33 testes backend + 17 frontend e build aprovados. Dois testes do p
 
 REA `ev_020072d06a16586ec43105e3c45ef0827ce0c98c37c022c260afaa974ef2a30e`: cenário completo confirmou WAV/PCM, 256 kbps, 16.000 Hz, mono, reprodução real, restauração após recarregar e estado sem dados de URL externa. Zero erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: visualizador de forma de onda para as demonstrações locais, com navegação no áudio. OAuth e colaboração permanecem pendentes.
+Etapa seguinte concluída abaixo: visualizador de forma de onda para demos locais. OAuth e colaboração permanecem pendentes.
+
+
+## Forma de onda com navegação — 18/10/2026
+
+O player consulta `/tracks/:id/waveform` apenas ao selecionar a faixa. Endpoint público retorna 96 picos PCM e duração medida, null quando não disponível e 404 para faixa inexistente. Picos são máximos absolutos por intervalo considerando todos os canais, normalizados entre zero e um; calculados uma vez por processo para os mesmos três arquivos permitidos. Não ampliam respostas de listagem, não ficam no SQLite e não analisam URLs externas.
+
+SVG mostra a amplitude e colore a parte já tocada. Um range acessível sobre a forma de onda oferece clique e Home/End/setas com contorno de foco. A função de busca compartilhada com a barra usa duração real e interrompe o intervalo do contador de escuta antes do salto. A pausa é preservada ao buscar. Erro/ausência da prévia mantém controles de reprodução e barra disponíveis; troca de faixa cancela a consulta anterior. O espaço abaixo do conteúdo foi ajustado para a altura adicional do player.
+
+Validação: 35 testes backend + 17 frontend e build aprovados. Novos testes cobrem picos reais, silêncio, canal estéreo, PCM 8/16/24/32 bits, limites, cópia dos resultados, endpoint público/null/404 e ausência dos picos na resposta padrão. `waveform.mjs` passou no Chromium: 96 barras, clique com áudio pausado, Home/End/setas, viewport móvel e falha 500 da prévia com áudio ainda tocando. Zero erros de página.
+
+REA `ev_d5e095bb990fdd76caa0c34ed1c63b6cc8512188f79a238c3e5bec35a52948f9`: cenário completo confirmou reprodução, prévia com GET 200, End na posição 8s, Home em 0s e seta em 0,1s, sincronizados com a barra. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: filtro por gênero na busca de artistas, reaproveitando o filtro SQL existente. OAuth e colaboração permanecem pendentes.

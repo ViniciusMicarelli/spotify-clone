@@ -1,4 +1,5 @@
 import express from 'express';
+import { audioWaveform } from '../../data/audio-metadata.js';
 import authMiddleware from '../../middleware/auth.js';
 import { getCatalog, listCatalog, saveCatalog, deleteCatalog, trackDetails } from '../../data/catalog.js';
 import { parsePagination } from '../../utils/pagination.js';
@@ -10,6 +11,11 @@ function routerFor(kind) {
     const pagination = parsePagination(req.query);
     if (!pagination || [search, artistId, albumId, genre].some(value => value !== undefined && typeof value !== 'string')) return res.status(400).json({ error: 'Filtros ou paginação inválidos.' });
     res.json(listCatalog(kind, { ...pagination, search, artistId, albumId, genre }));
+  });
+  if (kind === 'tracks') router.get('/:id/waveform', (req, res) => {
+    const track = getCatalog('tracks', req.params.id);
+    if (!track) return res.status(404).json({ error: 'Faixa não encontrada.' });
+    res.json({ data: audioWaveform(track.url) });
   });
   router.get('/:id',(req,res) => {
     const value = getCatalog(kind,req.params.id);

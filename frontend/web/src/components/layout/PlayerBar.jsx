@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Waveform from '../Waveform';
 import FavoriteButton from '../FavoriteButton';
 import { createListenTracker } from '../../player/listen';
 import { api, useAuthStore, useAuth } from '../../context/AuthContext';
@@ -62,6 +63,13 @@ export default function PlayerBar({ track, request, position, total, hasNext, sh
       setStatus('error'); setError('Não foi possível reproduzir esta faixa. Tente novamente ou escolha outra.');
     });
   }
+  function seek(target) {
+    if (!duration || !Number.isFinite(target)) return;
+    listen.current?.tracker.breakInterval();
+    audio.current.currentTime = Math.max(0, Math.min(duration, target));
+    setTime(audio.current.currentTime);
+    if (status === 'ended') setStatus('paused');
+  }
   function previous() {
     if (audio.current.currentTime > 3 || (position === 1 && repeat !== 'all')) {
       audio.current.currentTime = 0; setTime(0);
@@ -74,7 +82,8 @@ export default function PlayerBar({ track, request, position, total, hasNext, sh
     {historyError && listen.current?.generation === generation && <p role="alert">{historyError} <button onClick={() => saveListen(listen.current)}>Tentar salvar novamente</button></p>}
     <audio ref={audio} src={source} preload="metadata" onPlaying={() => { setStatus('playing'); setError(''); sampleListen(audio.current); }} onPause={() => { listen.current?.tracker.breakInterval(); setStatus(current => current === 'playing' ? 'paused' : current); }} onSeeking={() => listen.current?.tracker.breakInterval()} onTimeUpdate={event => { setTime(event.target.currentTime); sampleListen(event.target); }} onLoadedMetadata={event => setDuration(Number.isFinite(event.target.duration) ? event.target.duration : 0)} onEnded={() => { setStatus('ended'); if (hasNext || repeat === 'one') onEnded(); }} onError={() => { if (track) { setStatus('error'); setError('Áudio indisponível. Tente novamente ou escolha outra faixa.'); } }} />
     <div className="playback"><div className="transport-controls"><button className="mode-button" aria-label="Aleatório" aria-pressed={shuffle} onClick={onShuffle}>Aleatório</button><button disabled={!track || !duration} onClick={previous}>Anterior</button><button disabled={!track} onClick={toggle}>{status === 'playing' ? 'Pausar' : 'Reproduzir'}</button><button disabled={!hasNext} onClick={onNext}>Próxima</button><button className="mode-button" aria-label="Repetição" aria-pressed={repeat !== 'off'} data-repeat={repeat} onClick={onRepeat}>Repetir: {{ off: 'desligado', all: 'fila', one: 'faixa' }[repeat]}</button></div>
-      <label className="timeline">{format(time)}<input aria-label="Progresso da faixa" aria-valuenow={Number(time.toFixed(1))} type="range" min="0" max={duration || 0} value={Math.min(time, duration)} step="0.1" disabled={!duration} onChange={event => { const target = Number(event.target.value); audio.current.currentTime = target; setTime(target); if (status === 'ended') setStatus('paused'); }} />{format(duration)}</label>
+      {track && <Waveform key={`${track.id}:${source}`} track={track} duration={duration} time={time} onSeek={seek} disabled={status === 'error'} />}
+      <label className="timeline">{format(time)}<input aria-label="Progresso da faixa" aria-valuenow={Number(time.toFixed(1))} type="range" min="0" max={duration || 0} value={Math.min(time, duration)} step="0.1" disabled={!duration} onChange={event => seek(Number(event.target.value))} />{format(duration)}</label>
     </div>
     <label>Volume<input aria-label="Volume" aria-valuenow={Math.round(volume * 100)} aria-valuetext={`${Math.round(volume * 100)}%`} type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label>
   </footer>;

@@ -23,3 +23,34 @@ test('RIFF parsing skips padded chunks and rejects truncation, invalid sizes and
     const bytes = Buffer.from(original); bytes[method](value, offset); assert.equal(parseWaveMetadata(bytes), null);
   }
 });
+
+test('waveform peaks reflect PCM samples, silence and all channels with bounded output', async () => {
+  const { wavePeaks, audioWaveform } = await import('../data/audio-metadata.js');
+  const demo = audioWaveform('/api/v1/audio/demo-1.wav');
+  assert.equal(demo.peaks.length, 96); assert.equal(demo.durationMs, 8000);
+  assert.ok(demo.peaks.some(peak => peak > 0));
+  assert.ok(demo.peaks.every(peak => Number.isFinite(peak) && peak >= 0 && peak <= 1));
+  demo.peaks[0] = 9;
+  assert.notEqual(audioWaveform('/api/v1/audio/demo-1.wav').peaks[0], 9);
+  assert.equal(audioWaveform('https://example.com/audio.wav'), null);
+  assert.equal(wavePeaks(Buffer.alloc(5)), null);
+  // A stereo 16-bit file where only the second channel reaches full scale.
+  const stereo = Buffer.alloc(44 + 96 * 4);
+  original.copy(stereo, 0, 0, 44);
+  stereo.writeUInt32LE(stereo.length - 8, 4); stereo.writeUInt16LE(2, 22);
+  stereo.writeUInt32LE(64000, 28); stereo.writeUInt16LE(4, 32); stereo.writeUInt32LE(96 * 4, 40);
+  stereo.writeInt16LE(-32768, 46);
+  const peaks = wavePeaks(stereo).peaks;
+  assert.equal(peaks[0], 1); assert.ok(peaks.slice(1).every(peak => peak === 0));
+  stereo.fill(0, 44); assert.ok(wavePeaks(stereo).peaks.every(peak => peak === 0));
+  for (const bits of [8, 24, 32]) {
+    const width = bits / 8, bytes = Buffer.alloc(44 + 96 * width);
+    original.copy(bytes, 0, 0, 44);
+    bytes.writeUInt32LE(bytes.length - 8, 4); bytes.writeUInt32LE(16000 * width, 28);
+    bytes.writeUInt16LE(width, 32); bytes.writeUInt16LE(bits, 34); bytes.writeUInt32LE(96 * width, 40);
+    if (bits === 8) { bytes.fill(128, 44); bytes[44] = 0; }
+    else bytes.writeIntLE(-(2 ** (bits - 1)), 44, width);
+    const result = wavePeaks(bytes).peaks;
+    assert.equal(result[0], 1); assert.ok(result.slice(1).every(peak => peak === 0));
+  }
+});

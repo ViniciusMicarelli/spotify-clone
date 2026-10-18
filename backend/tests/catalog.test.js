@@ -228,3 +228,15 @@ test('track technical metadata is derived, read-only and absent for external or 
   assert.equal((await request('/tracks/' + track.id, 'PUT', { url: '/api/v1/audio/missing.wav' })).data.data.technical, null);
   await request('/tracks/' + track.id, 'DELETE');
 });
+
+test('waveform route is public, bounded and nullable without altering track responses', async () => {
+  const response = await fetch(base + '/tracks/1/waveform');
+  assert.equal(response.status, 200);
+  const waveform = (await response.json()).data;
+  assert.equal(waveform.peaks.length, 96); assert.equal(waveform.durationMs, 8000);
+  assert.equal((await request('/tracks/missing/waveform')).status, 404);
+  assert.equal((await request('/tracks/1')).data.data.waveform, undefined);
+  const track = await create('tracks', { title: 'No waveform', duration: 1000, artists: [], albumId: '1', url: 'https://example.com/audio.mp3' });
+  assert.equal((await request('/tracks/' + track.id + '/waveform')).data.data, null);
+  await request('/tracks/' + track.id, 'DELETE');
+});
