@@ -1,3 +1,4 @@
+import { audioMetadata } from './audio-metadata.js';
 import { randomUUID } from 'node:crypto';
 import { database as db, PersistentMap, transaction } from './store.js';
 import { mockArtists, mockAlbums, mockTracks } from './catalog-seed.js';
@@ -22,7 +23,7 @@ function write(kind, value) {
     run('INSERT INTO catalog_albums(id,name,images,uri,metadata) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,images=excluded.images,uri=excluded.uri,metadata=excluded.metadata', value.id, value.name, JSON.stringify(value.images || []), value.uri || `spotify:album:${value.id}`, extra(value, ['id','name','images','uri','artists','tracks','totalTracks','duration']));
     links('catalog_album_artists', 'album_id', value.id, [...new Set(value.artists || [])]);
   } else {
-    run('INSERT INTO catalog_tracks(id,title,duration,album_id,url,uri,metadata) VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,duration=excluded.duration,album_id=excluded.album_id,url=excluded.url,uri=excluded.uri,metadata=excluded.metadata', value.id, value.title, value.duration, value.album.id, value.url, value.uri || `spotify:track:${value.id}`, extra(value, ['id','title','duration','album','albumId','artists','url','uri','duration_formatted','album_uri']));
+    run('INSERT INTO catalog_tracks(id,title,duration,album_id,url,uri,metadata) VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,duration=excluded.duration,album_id=excluded.album_id,url=excluded.url,uri=excluded.uri,metadata=excluded.metadata', value.id, value.title, value.duration, value.album.id, value.url, value.uri || `spotify:track:${value.id}`, extra(value, ['id','title','duration','album','albumId','artists','url','uri','duration_formatted','album_uri','technical']));
     links('catalog_track_artists', 'track_id', value.id, [...new Set(value.artists || [])]);
   }
 }
@@ -76,7 +77,7 @@ export function getCatalog(kind, id) {
     return { ...JSON.parse(value.metadata), id, name: value.name, images: JSON.parse(value.images), uri: value.uri, artists: ids('catalog_album_artists','album_id',id), totalTracks: totals.count, duration: { ms: totals.ms, formatted: `${Math.floor(totals.ms / 60000)}:${String(Math.floor(totals.ms / 1000) % 60).padStart(2,'0')}` } };
   }
   const value = row('SELECT t.*, a.name AS album_name, a.uri AS album_uri FROM catalog_tracks t JOIN catalog_albums a ON a.id=t.album_id WHERE t.id=?',id);
-  return value && { ...JSON.parse(value.metadata), id, title: value.title, duration: value.duration, url: value.url, uri: value.uri, artists: ids('catalog_track_artists','track_id',id), album: { id: value.album_id, name: value.album_name, uri: value.album_uri } };
+  return value && { ...JSON.parse(value.metadata), id, title: value.title, duration: value.duration, url: value.url, uri: value.uri, technical: audioMetadata(value.url), artists: ids('catalog_track_artists','track_id',id), album: { id: value.album_id, name: value.album_name, uri: value.album_uri } };
 }
 export function trackDetails(track) { return { ...track, artistDetails: track.artists.map(id => ({ id, name: getCatalog('artists',id).name })) }; }
 export function catalogValues(kind) { return rows(`SELECT id FROM catalog_${kind} ORDER BY rowid`).map(value => getCatalog(kind, value.id)); }

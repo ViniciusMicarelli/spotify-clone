@@ -9,6 +9,10 @@ const { default: api } = await import('../../api-gateway/index.js');
 const { database, PersistentMap, transaction } = await import('../../data/store.js');
 const { saveCatalog, catalogValues } = await import('../../data/catalog.js');
 transaction(() => {
+  if (process.env.AUDIO_FIXTURE === '1') {
+    saveCatalog('tracks', { url: 'https://example.com/audio.mp3' }, '2');
+    saveCatalog('tracks', { url: '/api/v1/audio/missing.wav' }, '3');
+  }
   if (process.env.ALBUM_FIXTURE === '1') {
     saveCatalog('albums', { year: 2024, genres: ['Electronic', 'Instrumental'], images: [{ url: '/api/v1/images/album-demo.svg', width: 320, height: 320 }] }, '2');
     saveCatalog('albums', { images: [{ url: '/api/v1/images/missing.png' }] }, '3');

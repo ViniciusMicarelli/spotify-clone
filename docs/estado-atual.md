@@ -4,7 +4,7 @@
 
 - API inicia em um processo Express, sem Redis/PostgreSQL.
 - Frontend gera build de produção com Vite.
-- 30 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
+- 33 testes do backend e 17 testes do frontend passam: catálogo/busca, cadastro/login/JWT, criação autenticada de playlist, perfis/permissões/duração , reordenação, favoritos por conta e persistência em processo separado.
 - REA executou login demo, carregamento do catálogo, criação de playlist e busca por Digital no Chromium. Todos os passos do cenário final foram concluídos, com zero eventos de erro de página.
 
 Evidência REA: `ev_c003a7ed8b665e6b85f1785ab417932af1862e5eb790a0f5e663cbdbdd1fab88` (`capture_browser_scenario`, execução controlada, Chromium 156.0.8078.4). URL local usada: `http://127.0.0.1:5174`. O navegador temporário foi encerrado pela REA.
@@ -202,4 +202,17 @@ Validação: 30 testes backend + 17 frontend e build aprovados. Novo teste cobre
 
 REA `ev_646ed2ad5ad5d565bfed5b1ad88a1dfdba0671b0dccfb3e9730cf833da046fa7`: cenário completo confirmou capa na busca, abertura de Digital Dreams, ano 2024, gêneros, duração 0:10, restauração após recarregar e alternativa na capa quebrada de Summer Vibes. Zero erros de página. Navegador e fixture temporários encerrados ao final.
 
-Próxima etapa sugerida: metadados técnicos das faixas de demonstração (codec, bitrate, canais e taxa de amostragem), derivados dos arquivos locais. OAuth e colaboração permanecem pendentes.
+Etapa seguinte concluída abaixo: metadados técnicos das faixas de demonstração. OAuth e colaboração permanecem pendentes.
+
+
+## Metadados técnicos dos WAVs locais — 18/10/2026
+
+`technical` é derivado dos cabeçalhos dos três arquivos demo, não de valores fixos no catálogo. O parser valida RIFF/WAVE PCM, limites de chunks/padding, formato, taxas e alinhamento. Retorna container, codec, sampleRate, channels, bitsPerSample, bitrate, durationMs e fileSizeBytes. A leitura é limitada a nomes conhecidos, arquivos regulares de até 16 MiB, sem resolver URLs em caminhos nem acessar rede. É um snapshot por processo: mudanças nos arquivos exigem reiniciar a API. Ausências, formatos não suportados e URLs externas resultam em null. Não há decoder genérico, transcodificação ou seleção de qualidade.
+
+A seção Informações do áudio nos detalhes mostra formato, bitrate, Hz, canais, profundidade e duração medida; distingue a duração cadastrada. Dados derivados não são graváveis ou persistidos no metadata JSON. Registros legados e snapshots permanecem preservados. O checklist maior de qualidade continua parcial por cobrir apenas as demonstrações PCM locais.
+
+Validação: 33 testes backend + 17 frontend e build aprovados. Dois testes do parser cobrem os arquivos reais, URLs fora da lista, cópias dos resultados, chunks ímpares, truncamento, limites, formato e taxas inválidos. Integração valida campo somente de leitura, duração medida diferente da cadastrada e troca de URL para remoto/ausente. `track-technical.mjs` passou no Chromium: valores, recarga, reprodução/pausa, viewport móvel e indisponibilidade em remoto/ausente; zero erros de página.
+
+REA `ev_020072d06a16586ec43105e3c45ef0827ce0c98c37c022c260afaa974ef2a30e`: cenário completo confirmou WAV/PCM, 256 kbps, 16.000 Hz, mono, reprodução real, restauração após recarregar e estado sem dados de URL externa. Zero erros de página. Navegador e fixture temporários encerrados ao final.
+
+Próxima etapa sugerida: visualizador de forma de onda para as demonstrações locais, com navegação no áudio. OAuth e colaboração permanecem pendentes.

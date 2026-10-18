@@ -9,7 +9,7 @@
 - REA validou no Chromium: login demo, catálogo, criação de playlist e busca; nenhum erro de página registrado. Evidência e limites em `docs/estado-atual.md`.
 - Player usa HTMLAudioElement com três áudios instrumentais locais gerados para demonstração (8, 10 e 12 segundos). REA confirmou reprodução com progresso, pausa/retomada, busca, volume, próxima/anterior, fim natural, encerramento da fila e recuperação de erro.
 - Perfis e autenticação usam o mesmo armazenamento. Perfis e mutações de playlists são restritos ao proprietário; playlists privadas ficam ocultas de outras contas. Catálogo exige administrador para mutações.
-- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 30 testes do backend e 17 testes do frontend (fila/paginação/escuta/reordenação/busca) aprovados, incluindo persistência em novo processo.
+- Interface permite editar/excluir playlists, mudar visibilidade e adicionar/remover faixas. 33 testes do backend e 17 testes do frontend (fila/paginação/escuta/reordenação/busca) aprovados, incluindo persistência em novo processo.
 - REA confirmou edição de playlist e reabertura em nova sessão; evidências em `docs/estado-atual.md`.
 - Reordenação por botões subir/descer implementada; a API valida que a lista contém exatamente as faixas atuais. Favoritos privados por conta disponíveis no catálogo, detalhes, player e página Músicas curtidas.
 - Testes confirmam que ordem e curtidas persistem em novo processo. REA confirmou reordenação e o fluxo curtir → Músicas curtidas → descurtir em cenários separados.
@@ -24,6 +24,7 @@
 - Busca permite alternar músicas, artistas e álbuns, com tipo/termo/paginação na URL e links para detalhes. Chromium e REA confirmaram paginação e navegação.
 - Artistas têm biografia, país, gêneros e retrato nos detalhes; fotos aparecem na busca e biblioteca. API valida limites e URLs, com escrita restrita a administradores e alternativa para imagens indisponíveis.
 - Álbuns têm ano, gêneros e capa nos detalhes/busca, com duração e quantidade calculadas pelas faixas. API valida metadados; Chromium e REA confirmaram exibição, recarga e alternativa de capa quebrada.
+- Faixas de demonstração exibem codec, bitrate, canais, taxa de amostragem, profundidade e duração medidos dos WAVs locais; campos somente de leitura, sem consultas a URLs externas. Chromium e REA confirmaram detalhes e reprodução.
 - OAuth e colaboração continuam pendentes.
 - Página Meu perfil implementada: edição de nome/foto, atualização no cabeçalho e nos donos das playlists, persistência após recarregar. REA confirmou o fluxo.
 - Migração, rollback, savepoints e concorrência entre processos validados em testes isolados. Dados locais migrados com igualdade das sete coleções antes da edição do perfil.

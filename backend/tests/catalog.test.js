@@ -217,3 +217,14 @@ test('album metadata persists and duration follows track edits, moves and deleti
   await request('/tracks/' + second.id, 'DELETE');
   await request('/albums/' + album.id, 'DELETE');
 });
+
+test('track technical metadata is derived, read-only and absent for external or missing audio', async () => {
+  const demo = (await request('/tracks/1')).data.data;
+  assert.equal(demo.technical.codec, 'PCM'); assert.equal(demo.technical.bitrate, 256000);
+  assert.equal((await request('/tracks/1', 'PUT', { technical: { codec: 'MP3' } })).status, 400);
+  const track = await create('tracks', { title: 'Technical source', duration: 12000, artists: ['1'], albumId: '1', url: '/api/v1/audio/demo-1.wav' });
+  assert.equal(track.technical.durationMs, 8000); assert.equal(track.duration, 12000);
+  assert.equal((await request('/tracks/' + track.id, 'PUT', { url: 'https://example.com/audio.mp3' })).data.data.technical, null);
+  assert.equal((await request('/tracks/' + track.id, 'PUT', { url: '/api/v1/audio/missing.wav' })).data.data.technical, null);
+  await request('/tracks/' + track.id, 'DELETE');
+});

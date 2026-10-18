@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { api, useAuth } from '../context/AuthContext';
+import TrackTechnical from '../components/TrackTechnical';
 import ArtistDetails from '../components/ArtistDetails';
 import CatalogImage from '../components/CatalogImage';
 import ArtistImage from '../components/ArtistImage';
@@ -40,6 +41,7 @@ export default function Catalog({ kind, search = false }) {
     {error ? <p role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Tentar novamente</button></p> : !result ? <p role="status">Carregando catálogo…</p> : <>
       {kind === 'artists' && id && <ArtistDetails key={id} artist={result.detail} />}
       {kind === 'albums' && id && <section className="artist-details" aria-label="Sobre o álbum"><CatalogImage item={result.detail} kind="albums" detail /><div><h2>Sobre o álbum</h2><p><strong>Ano:</strong> {result.detail.year ?? 'Não informado'}</p><p><strong>Gêneros:</strong> {result.detail.genres?.length ? result.detail.genres.join(', ') : 'Não informados'}</p><p>{result.detail.totalTracks} faixas · {result.detail.duration.formatted}</p></div></section>}
+      {singleTrack && <TrackTechnical technical={result.detail.technical} />}
       {isTracks ? <TrackList tracks={result.items} onPlay={play} offset={singleTrack ? 0 : paging.offset} /> : <div className="cards">{result.items.map(item => <Link className="card" key={item.id} to={`/${kind === 'playlists' ? 'playlist' : kind === 'artists' ? 'artist' : 'album'}/${item.id}`}>{kind === 'artists' ? <ArtistImage artist={item} /> : kind === 'albums' ? <CatalogImage item={item} kind="albums" /> : <div className="cover">♫</div>}<h2>{item.name}</h2><p className="muted">{kind === 'artists' ? `${item.followers} seguidores${item.genres?.length ? ` · ${item.genres.join(', ')}` : ''}` : kind === 'albums' ? `${item.year ? `${item.year} · ` : ''}${item.totalTracks} faixas · ${item.duration.formatted}` : item.description || 'Playlist'}</p></Link>)}{!result.items.length && <p>Nenhum resultado.</p>}</div>}
       {!singleTrack && <Pagination page={paging.page} size={paging.size} total={result.total} onPage={paging.setPage} onSize={paging.setSize} />}
       {isTracks && result.total > paging.size && <p className="muted">Ao ouvir, a fila usa as faixas desta página.</p>}
